@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: ItemChecklist
   m_EditorClassIdentifier: 
   metadata:
-    guid: 45103bfded4742c2b747b83c2c2da350
+    guid: dbe54e8c2157416da620d7bab003d548
     name: ItemChecklist
-    displayName: Disable Durability
+    displayName: Item Checklist
     skipSafetyChecks: 0
     disableScripts: 0
     accessesExtraAssemblies: 1
