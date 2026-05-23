@@ -63,6 +63,15 @@ namespace ItemChecklist
         /// </summary>
         public void Bake()
         {
+            // PugDatabase.objectsByType is null until UpdateEntityMonos runs at
+            // least once. Bake() called too early (before the world is ready)
+            // hits this — fail soft so the consumer can retry.
+            if (PugDatabase.objectsByType == null)
+            {
+                Debug.LogWarning("[ItemChecklist] ItemCatalog.Bake called before PugDatabase ready — skipping");
+                return;
+            }
+
             var list = new List<Entry>();
 
             // Pre-resolve mod-id → display-name once so the per-entry loop
@@ -78,8 +87,9 @@ namespace ItemChecklist
 
             foreach (var od in PugDatabase.objectsByType.Keys)
             {
-                // For a checklist we only care about the canonical variant of
-                // each item — skip colour/skin variations.
+                // Phase-1 scope: one tick per item family. Skip colour/skin
+                // variations (variation > 0). Phase-2 may revisit if per-skin
+                // tracking becomes desirable.
                 if (od.variation != 0) continue;
 
                 var info = PugDatabase.GetObjectInfo(od.objectID, od.variation);
@@ -90,6 +100,10 @@ namespace ItemChecklist
                 // everything that *isn't* a categorically-non-item type. The
                 // exclusion list mirrors the start of ItemBrowser's
                 // ObjectUtility.IsNonObtainable.
+                // NonUsable=0 is the default value of any DB entry registered
+                // without an explicit type — test fixtures, prefab stubs, etc.
+                // Almost always garbage from a player-facing checklist's POV.
+                if (info.objectType == ObjectType.NonUsable) continue;
                 if (info.objectType == ObjectType.NonObtainable) continue;
                 if (info.objectType == ObjectType.Creature) continue;
                 if (info.objectType == ObjectType.Critter) continue;
