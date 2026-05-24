@@ -106,6 +106,27 @@ namespace ItemChecklist.UI
             return null;
         }
 
+        // Load a named sub-sprite out of a multi-sprite atlas PNG. Needed
+        // for ui_classic.png, which Unity packs as 12+ named sub-sprites
+        // (ui_panel, ui_slot_background, ui_scrollbar_handle, ...).
+        // LoadAsset<Sprite>(path) only returns the first sub-sprite, so
+        // we need LoadAssetWithSubAssets + filter by .name to pick a
+        // specific one.
+        private static Sprite LoadSubSprite(string atlasFile, string subSpriteName)
+        {
+            var bundle = ItemChecklistMod.AssetBundle;
+            if (bundle == null) return null;
+            var canonical = $"Assets/ItemChecklist/Art/Bridge/{atlasFile}";
+            var sprites = bundle.LoadAssetWithSubAssets<Sprite>(canonical);
+            if (sprites != null)
+            {
+                foreach (var s in sprites)
+                    if (s != null && s.name == subSpriteName) return s;
+            }
+            Debug.LogWarning($"[ItemChecklist] Sub-sprite '{subSpriteName}' not found in atlas '{atlasFile}' (loaded {sprites?.Length ?? 0} sub-sprites)");
+            return null;
+        }
+
         private void BuildUi()
         {
             Debug.Log("[ItemChecklist] BuildUi: starting");
@@ -114,8 +135,13 @@ namespace ItemChecklist.UI
             if (catalog == null) { Debug.LogWarning("[ItemChecklist] Catalog not baked yet"); return; }
 
             // Lazy-load bridge sprites on first build.
-            if (WindowBgSprite == null) WindowBgSprite = LoadSprite("ui_classic.png");
-            if (TextBgSprite == null) TextBgSprite = LoadSprite("ui_text_background.png");
+            // ui_classic.png is a multi-sprite atlas (12+ named sub-sprites).
+            // For each UI surface, we pick the right sub-sprite so the
+            // 9-slice borders defined in the atlas .meta are correct
+            // automatically. ui_panel  = window background frame,
+            // ui_slot_background  = sunken inset (input/dropdown/slots).
+            if (WindowBgSprite == null) WindowBgSprite = LoadSubSprite("ui_classic.png", "ui_panel");
+            if (TextBgSprite   == null) TextBgSprite   = LoadSubSprite("ui_classic.png", "ui_slot_background");
             if (UnknownItemSprite == null) UnknownItemSprite = LoadSprite("ui_unknown_item.png");
 
             root = new GameObject("ItemChecklist.Root");
