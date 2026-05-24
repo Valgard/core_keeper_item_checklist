@@ -14,6 +14,7 @@ namespace ItemChecklist.UI
 
         private Image checkboxImage;
         private Image iconImage;
+        private Text iconPlaceholderText;
         private Text label;
 
         // Static shared font reference (cached on first row creation)
@@ -61,6 +62,22 @@ namespace ItemChecklist.UI
             iconImage = iconGo.GetComponent<Image>();
             iconImage.preserveAspect = true;
 
+            // "?" placeholder text centered on the icon slot. Shown only
+            // for undiscovered items; the icon Image then renders as a
+            // plain grey square (no sprite) with this "?" overlayed.
+            var phGo = new GameObject("IconPlaceholder", typeof(RectTransform), typeof(Text));
+            phGo.transform.SetParent(iconGo.transform, worldPositionStays: false);
+            var phrt = (RectTransform) phGo.transform;
+            phrt.anchorMin = Vector2.zero; phrt.anchorMax = Vector2.one;
+            phrt.offsetMin = Vector2.zero; phrt.offsetMax = Vector2.zero;
+            iconPlaceholderText = phGo.GetComponent<Text>();
+            iconPlaceholderText.font = sharedFont;
+            iconPlaceholderText.alignment = TextAnchor.MiddleCenter;
+            iconPlaceholderText.fontSize = 20;
+            iconPlaceholderText.color = new Color(0.7f, 0.7f, 0.7f, 1f);
+            iconPlaceholderText.text = "?";
+            iconPlaceholderText.enabled = false;     // default off; Bind sets per row
+
             // Label (fills the rest)
             var labelGo = new GameObject("Label", typeof(RectTransform));
             labelGo.transform.SetParent(transform, worldPositionStays: false);
@@ -83,17 +100,21 @@ namespace ItemChecklist.UI
                 iconImage.sprite = icon;
                 iconImage.color = Color.white;
                 iconImage.enabled = icon != null;
+                iconPlaceholderText.enabled = false;
                 label.text = name;
                 label.color = Color.white;
             }
             else
             {
                 checkboxImage.color = new Color(0.3f, 0.3f, 0.3f, 1f);    // grey
-                // Spoiler-mask: hide the icon entirely (per spec) — undiscovered
-                // items should not leak their visual identity. F3 may swap this
-                // for a "???" silhouette sprite if we ship one.
+                // Spoiler-mask: render a grey square placeholder with a
+                // centered "?" overlay instead of the real sprite. Keeps
+                // the row's visual rhythm aligned but doesn't leak the
+                // item's identity.
                 iconImage.sprite = null;
-                iconImage.enabled = false;
+                iconImage.color = new Color(0.2f, 0.2f, 0.2f, 1f);
+                iconImage.enabled = true;
+                iconPlaceholderText.enabled = true;
                 label.text = "???";
                 label.color = new Color(0.6f, 0.6f, 0.6f, 1f);
             }
