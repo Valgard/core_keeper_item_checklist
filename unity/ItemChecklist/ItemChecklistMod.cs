@@ -1,3 +1,4 @@
+using System.Linq;
 using CoreLib;
 using CoreLib.Submodule.ControlMapping;
 using ItemChecklist.UI;
@@ -26,6 +27,13 @@ namespace ItemChecklist
     {
         public static ItemCatalog Catalog { get; private set; }
 
+        // AssetBundle reference — set in EarlyInit. UI code loads sprites
+        // (window background, placeholder icon, etc.) via
+        // AssetBundle.LoadAsset<Sprite>("Assets/ItemChecklist/Art/..."),
+        // same pattern Item Browser uses.
+        public static AssetBundle AssetBundle { get; private set; }
+        public static LoadedMod ModInfo { get; private set; }
+
         // F1-Toggle UI controller. Single instance; builds the window on
         // first Toggle() call.
         private static readonly UiController Ui = new UiController();
@@ -45,6 +53,20 @@ namespace ItemChecklist
         public void EarlyInit()
         {
             Debug.Log("[ItemChecklist] EarlyInit");
+
+            // Grab our AssetBundle handle (sprites for the UI live here).
+            // Pattern from Item Browser's Main.EarlyInit.
+            ModInfo = API.ModLoader.LoadedMods.FirstOrDefault(m => m.Handlers.Contains(this));
+            if (ModInfo != null && ModInfo.AssetBundles != null && ModInfo.AssetBundles.Count > 0)
+            {
+                AssetBundle = ModInfo.AssetBundles[0];
+                Debug.Log($"[ItemChecklist] AssetBundle loaded with {AssetBundle.GetAllAssetNames().Length} assets");
+            }
+            else
+            {
+                Debug.LogWarning("[ItemChecklist] AssetBundle not available — UI will fall back to default Unity sprites");
+            }
+
             CoreLibMod.LoadSubmodule(typeof(ControlMappingModule));
 
             // Register the toggle keybind (default F1). CoreLib's
