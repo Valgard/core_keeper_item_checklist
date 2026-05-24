@@ -7,13 +7,23 @@ namespace ItemChecklist
 {
     /// <summary>
     /// Two-pass scanner for the initial state-population on first mod-load
-    /// in a world. Pass 1 walks the local player's own inventory (hotbar +
-    /// bag + equipment slots — all share one <c>ContainedObjectsBuffer</c>
-    /// on the player's inventory entity). Pass 2 walks every entity in the
-    /// world that has a <c>ContainedObjectsBuffer</c> and is not a crafting
-    /// station, then reads each slot. Every non-empty slot's objectID flows
-    /// through <see cref="ChecklistState.SetOwned"/> with source
-    /// <see cref="OwnSource.InitialScan"/>.
+    /// in a world. Pass 1 walks the local player's own inventory buffer at
+    /// <c>playerInventoryHandler.inventoryEntity</c>. Pass 2 walks every
+    /// entity in the world that has a <c>ContainedObjectsBuffer</c> and is
+    /// not a crafting station, then reads each slot. Every non-empty
+    /// slot's objectID flows through <see cref="ChecklistState.SetOwned"/>
+    /// with source <see cref="OwnSource.InitialScan"/>.
+    ///
+    /// <para><b>Pass-1 buffer layout TODO (Live-Verification):</b> whether
+    /// hotbar, bag AND equipment slots share the same
+    /// <c>ContainedObjectsBuffer</c>, or whether equipment slots
+    /// (helm/breast/ring/…) live on separate inventory entities, is
+    /// unverified at the symbol-probe level. <c>Pug.Other.dll</c> exposes
+    /// <c>helmInventoryHandler</c>, <c>breastInventoryHandler</c>,
+    /// <c>ring1InventoryHandler</c> et al. as <c>PlayerController</c>
+    /// fields, which suggests separate handlers. If the live smoke-test
+    /// shows equipped items not getting auto-checked, this method needs to
+    /// iterate those handlers' buffers in addition to the main inventory.</para>
     ///
     /// Heuristic — see <c>docs/research/spike-2-container-type-heuristic.md</c>:
     ///
@@ -61,10 +71,11 @@ namespace ItemChecklist
         }
 
         /// <summary>
-        /// Pass 1: walk the local player's own inventory buffer. Hotbar,
-        /// bag and equipment slots all live in a single
-        /// <c>ContainedObjectsBuffer</c> on the player's inventory entity
-        /// (resolved via <c>Manager.main.player.playerInventoryHandler.inventoryEntity</c>).
+        /// Pass 1: walk the local player's own inventory buffer, resolved
+        /// via <c>Manager.main.player.playerInventoryHandler.inventoryEntity</c>.
+        /// Whether equipment slots (helm/breast/ring/…) also live in this
+        /// buffer or on separate inventory entities is a Live-Verification
+        /// TODO — see class-level XML doc.
         /// </summary>
         private int ScanLocalPlayerInventory()
         {
@@ -136,11 +147,11 @@ namespace ItemChecklist
                 queryCreated = true;
                 entities = query.ToEntityArray(Allocator.Temp);
 
+                // Every entity in `entities` is guaranteed to have the
+                // buffer (the query filtered for it). No need to re-check.
                 int count = 0;
                 foreach (var entity in entities)
                 {
-                    if (!em.Value.HasBuffer<ContainedObjectsBuffer>(entity))
-                        continue;
                     var buf = em.Value.GetBuffer<ContainedObjectsBuffer>(entity);
                     count += ConsumeBuffer(buf);
                 }
