@@ -18,6 +18,9 @@ namespace ItemChecklist.UI
         private VirtualScrollList list;
         private Text counterLabel;
         private InputField searchField;
+        // Lazily-built TextInputInterface adapter handed to Manager.input
+        // on toggle-open. One-shot, lifetime = UiController instance.
+        private UnityInputFieldAdapter inputAdapter;
         private Dropdown filterDropdown;
 
         // Sprites loaded from our AssetBundle (Item-Browser pattern).
@@ -44,16 +47,35 @@ namespace ItemChecklist.UI
             root.SetActive(!root.activeSelf);
             Debug.Log($"[ItemChecklist] window {(root.activeSelf ? "shown" : "hidden")}");
 
-            // TODO Input-freeze: Manager.input.SetActiveInputField needs
-            // an InputManager.TextInputInterface adapter (CK-internal type),
-            // not a UnityEngine.UI.InputField. Needs decompile-spike to
-            // figure out how to construct/wrap one — Item Browser's
-            // OnShow uses Manager.input.SetActiveInputField(null) on
-            // open and never sets it to non-null itself, suggesting their
-            // input-freeze comes from being a UIelement (CK base class)
-            // rather than the input-field call. Until we adopt UIelement
-            // (Phase F2'), WASD will continue to drive the player when
-            // our window is open.
+            // Input-freeze: tell CK's InputManager that a text input is
+            // active. CK's polling code (movement, hotbar, etc.) checks
+            // activeInputField != null and skips game-input dispatch when
+            // set. We wrap our Unity InputField in an adapter that
+            // satisfies CK's TextInputInterface.
+            try
+            {
+                if (root.activeSelf)
+                {
+                    if (inputAdapter == null && searchField != null)
+                        inputAdapter = new UnityInputFieldAdapter(searchField);
+                    if (inputAdapter != null)
+                    {
+                        Manager.input.SetActiveInputField(inputAdapter);
+                        searchField?.ActivateInputField();
+                        Debug.Log("[ItemChecklist] Input freeze ON — registered TextInputInterface adapter");
+                    }
+                }
+                else
+                {
+                    Manager.input.SetActiveInputField(null);
+                    searchField?.DeactivateInputField();
+                    Debug.Log("[ItemChecklist] Input freeze OFF — cleared adapter");
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"[ItemChecklist] Input-freeze toggle failed: {e.Message}");
+            }
         }
 
         private static Sprite LoadSprite(string name)
