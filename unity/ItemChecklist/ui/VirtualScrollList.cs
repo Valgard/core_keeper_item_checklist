@@ -17,22 +17,24 @@ namespace ItemChecklist.UI
 
         private readonly ScrollRect scrollRect;
         private readonly RectTransform content;
+        private readonly ItemRowView rowPrefab;
         private readonly Func<int, (int objectId, Sprite icon, string name, bool isDiscovered)> rowDataAt;
         private readonly List<ItemRowView> pool = new List<ItemRowView>();
 
         private int[] visibleIndices = Array.Empty<int>();
 
-        public VirtualScrollList(ScrollRect scrollRect, RectTransform content,
+        public VirtualScrollList(ScrollRect scrollRect, RectTransform content, ItemRowView rowPrefab,
                                  Func<int, (int, Sprite, string, bool)> rowDataAt)
         {
             this.scrollRect = scrollRect;
             this.content = content;
+            this.rowPrefab = rowPrefab;
             this.rowDataAt = rowDataAt;
             scrollRect.onValueChanged.AddListener(_ => Repaint());
 
             for (int i = 0; i < PoolSize; i++)
             {
-                var row = ItemRowView.Create(content);
+                var row = UnityEngine.Object.Instantiate(rowPrefab, content);
                 row.gameObject.SetActive(false);
                 pool.Add(row);
             }
