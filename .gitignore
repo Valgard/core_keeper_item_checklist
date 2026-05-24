@@ -28,3 +28,10 @@ UserSettings/
 .env
 .envrc
 .envrc.local
+
+# Bridge sprites — dev-only placeholder textures (originate from Item
+# Browser, MIT). NEVER ship in a release build — replace with own
+# pixel-art before publishing to mod.io. See PLACEHOLDER.md inside
+# the folder for the full replacement checklist.
+unity/ItemChecklist/Art/Bridge/
+unity/ItemChecklist/Art/Bridge.meta
