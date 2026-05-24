@@ -128,6 +128,20 @@ namespace ItemChecklist
             bool rawFired = Input.GetKeyDown(KeyCode.F1);
             if (rewiredFired || rawFired)
             {
+                // Game-state guard — pattern from Item Browser
+                // (ItemBrowserUI.cs:201). Block the hotkey when another
+                // menu (Main, Inventory, Pause, Char-Select…) is active,
+                // when another text input has focus, or when the chat
+                // window is open. Skip the guard when our own window is
+                // already visible so the user can always close it.
+                if (!Ui.IsVisible
+                    && (Manager.menu.IsAnyMenuActive()
+                        || Manager.input.textInputIsActive
+                        || ReferenceEquals(Manager.input.activeInputField, Manager.ui.chatWindow)))
+                {
+                    Debug.Log("[ItemChecklist] Hotkey ignored (other menu/input active)");
+                    return;
+                }
                 Debug.Log($"[ItemChecklist] Hotkey: rewired={rewiredFired} raw={rawFired} — toggling UI");
                 Ui.Toggle();
             }
