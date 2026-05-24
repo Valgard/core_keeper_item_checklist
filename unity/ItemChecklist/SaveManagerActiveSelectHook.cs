@@ -55,13 +55,11 @@ namespace ItemChecklist
                 // Return to main menu — clear state.
                 ActiveGuid = null;
                 AwaitingActiveDeserialize = false;
-                Debug.Log("[ItemChecklist] SetCharacterId(-1): cleared active char");
                 return;
             }
             // A specific char slot was selected. The next
             // OnAfterDeserialize is (per CK's code path) for THIS char.
             AwaitingActiveDeserialize = true;
-            Debug.Log($"[ItemChecklist] SetCharacterId({id}): awaiting active-char deserialize");
         }
     }
 }

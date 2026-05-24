@@ -71,12 +71,13 @@ namespace ItemChecklist
             Cache[guid] = ids;
 
             // Active-char detection: if SetCharacterId(id) was just called,
-            // this deserialize is for the active char.
+            // this deserialize is for the active char (per CK's sequential
+            // code path: SetCharacterId → file read → JsonOverwrite →
+            // OnAfterDeserialize on that specific instance).
             if (SaveManagerActiveSelectHook.AwaitingActiveDeserialize)
             {
                 SaveManagerActiveSelectHook.ActiveGuid = guid;
                 SaveManagerActiveSelectHook.AwaitingActiveDeserialize = false;
-                UnityEngine.Debug.Log($"[ItemChecklist] Captured active char guid: {guid} (count={count})");
             }
         }
     }
