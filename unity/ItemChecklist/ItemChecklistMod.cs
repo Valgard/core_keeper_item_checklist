@@ -44,47 +44,65 @@ namespace ItemChecklist
         public void ModObjectLoaded(Object obj) { }
         public void Shutdown() { }
 
+        // Single-step diagnostic for the Update loop. Logs ONCE per state
+        // change so we can see why the snapshot isn't applying without
+        // spamming the log every frame.
+        private string lastLoggedDiag;
+
         public void Update()
         {
-            // Player went away — clear "applied for" memory so the next
-            // character-load gets its own snapshot pushed.
             if (Manager.main == null || Manager.main.player == null)
             {
                 if (lastAppliedFor != null) lastAppliedFor = null;
+                LogDiag("no-player");
                 return;
             }
 
-            // Resolve active char's GUID from the ECS-side CharacterGuidCD.
-            // This is the same hash CK stores as CharacterData.characterGuid,
-            // so it doubles as our cache key.
-            string activeGuid;
+            string activeGuid = null;
+            string diag = "ok";
             try
             {
                 var playerEntity = Manager.main.player.entity;
-                if (playerEntity == Entity.Null) return;
+                if (playerEntity == Entity.Null) { LogDiag("entity-null"); return; }
                 var world = World.DefaultGameObjectInjectionWorld;
-                if (world == null || !world.IsCreated) return;
+                if (world == null || !world.IsCreated) { LogDiag("world-not-ready"); return; }
                 var em = world.EntityManager;
-                if (!em.HasComponent<CharacterGuidCD>(playerEntity)) return;
+                bool hasGuid = em.HasComponent<CharacterGuidCD>(playerEntity);
+                if (!hasGuid)
+                {
+                    LogDiag($"no-CharacterGuidCD on entity {playerEntity.Index}");
+                    return;
+                }
                 var hash = em.GetComponentData<CharacterGuidCD>(playerEntity).Value;
-                if (hash == default(Unity.Entities.Hash128)) return;
+                if (hash == default(Unity.Entities.Hash128)) { LogDiag("default-hash"); return; }
                 activeGuid = hash.ToString();
             }
             catch (System.Exception e)
             {
-                Debug.LogWarning($"[ItemChecklist] CharacterGuidCD lookup failed: {e.Message}");
+                LogDiag($"exception: {e.GetType().Name}: {e.Message}");
                 return;
             }
 
-            if (string.IsNullOrEmpty(activeGuid)) return;
-            if (activeGuid == lastAppliedFor) return;     // already applied
+            if (string.IsNullOrEmpty(activeGuid)) { LogDiag("empty-guid"); return; }
+            if (activeGuid == lastAppliedFor) return;     // already applied, silent
 
             if (!CharacterDataDiscoverySnapshot.Cache.TryGetValue(activeGuid, out var ids))
-                return;     // cache miss — wait until CK deserializes this char
+            {
+                LogDiag($"cache-miss for guid {activeGuid} (cache has {CharacterDataDiscoverySnapshot.Cache.Count} entries)");
+                return;
+            }
 
             DiscoveredState.Instance.Snapshot(ids);
             lastAppliedFor = activeGuid;
             Debug.Log($"[ItemChecklist] Snapshot applied: {ids.Length} ids for char {activeGuid}");
+            lastLoggedDiag = diag;
+        }
+
+        private void LogDiag(string reason)
+        {
+            if (reason == lastLoggedDiag) return;
+            lastLoggedDiag = reason;
+            Debug.Log($"[ItemChecklist] Update diag: {reason}");
         }
     }
 }
