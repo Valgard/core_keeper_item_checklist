@@ -39,6 +39,8 @@ namespace ItemChecklist
         {
             if (ids.Add(objectId))
             {
+                // Diagnostic — remove once UI gives visible feedback (Phase F).
+                UnityEngine.Debug.Log($"[ItemChecklist] AddOne: {objectId} (total {ids.Count})");
                 Discovered?.Invoke(objectId);
                 Changed?.Invoke();
             }
