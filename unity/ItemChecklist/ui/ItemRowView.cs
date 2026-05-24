@@ -107,14 +107,23 @@ namespace ItemChecklist.UI
             else
             {
                 checkboxImage.color = new Color(0.3f, 0.3f, 0.3f, 1f);    // grey
-                // Spoiler-mask: render a grey square placeholder with a
-                // centered "?" overlay instead of the real sprite. Keeps
-                // the row's visual rhythm aligned but doesn't leak the
-                // item's identity.
-                iconImage.sprite = null;
-                iconImage.color = new Color(0.2f, 0.2f, 0.2f, 1f);
-                iconImage.enabled = true;
-                iconPlaceholderText.enabled = true;
+                // Spoiler-mask: use the bridge "?" placeholder sprite if
+                // available; otherwise fall back to a grey square with
+                // the centered "?" text overlay.
+                if (UiController.UnknownItemSprite != null)
+                {
+                    iconImage.sprite = UiController.UnknownItemSprite;
+                    iconImage.color = Color.white;
+                    iconImage.enabled = true;
+                    iconPlaceholderText.enabled = false;
+                }
+                else
+                {
+                    iconImage.sprite = null;
+                    iconImage.color = new Color(0.2f, 0.2f, 0.2f, 1f);
+                    iconImage.enabled = true;
+                    iconPlaceholderText.enabled = true;
+                }
                 label.text = "???";
                 label.color = new Color(0.6f, 0.6f, 0.6f, 1f);
             }
