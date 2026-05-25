@@ -35,10 +35,6 @@ namespace ItemChecklist
         public static AssetBundle AssetBundle { get; private set; }
         public static LoadedMod ModInfo { get; private set; }
 
-        // F1-Toggle UI controller. Single instance; builds the window on
-        // first Toggle() call.
-        private static readonly UiController Ui = new UiController();
-
         // Rewired player captured via ControlMappingModule.rewiredStart
         // (Rewired is not ready at EarlyInit). Used to poll the bound
         // toggle action each frame.

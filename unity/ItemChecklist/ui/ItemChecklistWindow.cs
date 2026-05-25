@@ -1,4 +1,6 @@
+using System.Linq;
 using CoreLib.Submodule.UserInterface.Interface;
+using PugMod;
 using UnityEngine;
 
 namespace ItemChecklist.UI
@@ -9,6 +11,14 @@ namespace ItemChecklist.UI
         public GameObject root;
         public SpriteRenderer background;
         public PugText title;
+        public Transform rowsContent;     // assigned to RowsContainer/Content in Editor
+        public GameObject rowPrefab;      // assigned to ItemRow.prefab in Editor
+        public UIScrollWindow scrollWindow;
+
+        private readonly System.Collections.Generic.List<ItemRow> _spawnedRows = new System.Collections.Generic.List<ItemRow>();
+
+        private static readonly MemberInfo MiScrollable = typeof(UIScrollWindow).GetMembersChecked().FirstOrDefault(x => x.GetNameChecked() == "_scrollable");
+        private static readonly MemberInfo MiUpdateScrollHeight = typeof(UIScrollWindow).GetMembersChecked().FirstOrDefault(x => x.GetNameChecked() == "UpdateScrollHeight");
 
         // IModUI implementation
         public GameObject Root => root;
@@ -24,10 +34,12 @@ namespace ItemChecklist.UI
         {
             root.SetActive(true);
             ApplyTheme();
+            SpawnRows();
         }
 
         public void HideUI()
         {
+            ClearRows();
             root.SetActive(false);
         }
 
@@ -53,6 +65,47 @@ namespace ItemChecklist.UI
 
             if (title != null)
                 title.Render("Item Checklist");
+        }
+        private void SpawnRows()
+        {
+            ClearRows();
+
+            var catalog = ItemChecklistMod.Catalog;
+            var state = DiscoveredState.Instance;
+            if (catalog == null || state == null || rowPrefab == null) return;
+
+            float y = 0f;
+            for (int i = 0; i < catalog.Count; i++)
+            {
+                var entry = catalog.GetByIndex(i);
+                var go = Object.Instantiate(rowPrefab, rowsContent);
+                go.transform.localPosition = new Vector3(0, y, 0);
+                var row = go.GetComponent<ItemRow>();
+                if (row != null)
+                    row.Bind(entry.ObjectId, entry.Icon, entry.DisplayName, state.IsDiscovered(entry.ObjectId));
+                _spawnedRows.Add(row);
+                y -= ItemRow.RowHeight;
+            }
+
+            // Wire IScrollable so UIScrollWindow knows the content height.
+            // Uses API.Reflection (sandbox-safe), NOT System.Reflection on MemberInfo.Name.
+            if (scrollWindow != null && rowsContent != null)
+            {
+                var content = rowsContent.GetComponent<ItemChecklistContent>();
+                if (content != null)
+                {
+                    content.RowCount = _spawnedRows.Count;
+                    API.Reflection.SetValue(MiScrollable, scrollWindow, content);
+                    API.Reflection.Invoke(MiUpdateScrollHeight, scrollWindow);
+                }
+            }
+        }
+
+        private void ClearRows()
+        {
+            foreach (var r in _spawnedRows)
+                if (r != null) Object.Destroy(r.gameObject);
+            _spawnedRows.Clear();
         }
     }
 }
