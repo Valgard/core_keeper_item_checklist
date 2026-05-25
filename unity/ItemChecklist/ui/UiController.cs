@@ -98,29 +98,27 @@ namespace ItemChecklist.UI
             // existing children get re-parented under it). Both wire up
             // correctly here.
             var canvas = root.GetComponentInChildren<Canvas>();
-            if (canvas != null)
+            if (canvas == null)
             {
-                var uiCameraPug = API.Rendering.UICamera;
-                var renderCam = uiCameraPug != null ? uiCameraPug.GetComponent<Camera>() : null;
-                if (renderCam != null)
-                {
-                    canvas.renderMode = RenderMode.ScreenSpaceCamera;
-                    canvas.worldCamera = renderCam;
-                    canvas.sortingOrder = 50;
-                    Debug.Log("[ItemChecklist] Canvas wired to API.Rendering.UICamera (Screen Space - Camera)");
-                }
-                else
-                {
-                    canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-                    canvas.sortingOrder = 32000;
-                    Debug.LogWarning("[ItemChecklist] UICamera missing Camera component — falling back to Screen Space - Overlay");
-                }
-            }
-            else
-            {
-                Debug.LogError("[ItemChecklist] Window prefab root missing Canvas component — add Canvas + CanvasScaler + GraphicRaycaster in the Editor");
+                Debug.LogError("[ItemChecklist] Window prefab missing Canvas component");
                 return;
             }
+
+            // DIAGNOSTIC: force Overlay + very high sort order to verify
+            // the prefab renders at all. If visible: UICamera integration
+            // (Option B) is the blocker. If still invisible: window layout
+            // itself is broken.
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 32000;
+            Debug.Log($"[ItemChecklist] DIAGNOSTIC: canvas active={canvas.gameObject.activeSelf}, enabled={canvas.enabled}, pos={canvas.transform.position}, sortOrder={canvas.sortingOrder}");
+
+            var windowChild = root.transform.Find("Canvas/Window") ?? root.transform.Find("Window");
+            if (windowChild != null)
+            {
+                var wrt = windowChild as RectTransform;
+                Debug.Log($"[ItemChecklist] Window: pos={windowChild.position}, active={windowChild.gameObject.activeSelf}, rect={(wrt != null ? wrt.rect.ToString() : "no RT")}");
+            }
+            else Debug.LogWarning("[ItemChecklist] Window child not found at expected path");
 
             // uGUI needs an EventSystem for InputField/Dropdown/Button mouse routing
             if (EventSystem.current == null)
