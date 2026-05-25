@@ -1,5 +1,6 @@
 using PugMod;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace ItemChecklist.UI
@@ -75,22 +76,55 @@ namespace ItemChecklist.UI
                 return;
             }
 
-            // Parent under CK's UI camera so we inherit its Canvas, its
-            // sort order (cursor stays on top), and so UIelement
-            // registers in the modal-UI hierarchy that blocks gameplay
-            // input while shown. Item Browser pattern.
-            var uiCamera = API.Rendering.UICamera;
-            if (uiCamera == null)
-            {
-                Debug.LogError("[ItemChecklist] API.Rendering.UICamera null — cannot parent UI");
-                return;
-            }
-            root = UnityEngine.Object.Instantiate(prefab, uiCamera.transform);
+            // Standalone Instantiate — Canvas at root drives rendering.
+            // Item Browser's UICamera-parent pattern only works with
+            // SpriteRenderer-based UI (no uGUI). We use uGUI, so we keep
+            // our own Canvas but route it through the UI camera in
+            // Screen-Space-Camera mode (Option B) — Canvas integrates into
+            // CK's UI sort hierarchy (helps cursor z-order) while uGUI
+            // still renders pixel-perfect.
+            root = UnityEngine.Object.Instantiate(prefab);
+            UnityEngine.Object.DontDestroyOnLoad(root);
             view = root.GetComponent<ItemChecklistWindowView>();
             if (view == null)
             {
                 Debug.LogError("[ItemChecklist] Prefab root missing ItemChecklistWindowView component");
                 return;
+            }
+
+            var canvas = root.GetComponent<Canvas>();
+            if (canvas != null)
+            {
+                var uiCameraPug = API.Rendering.UICamera;
+                var renderCam = uiCameraPug != null ? uiCameraPug.GetComponent<Camera>() : null;
+                if (renderCam != null)
+                {
+                    canvas.renderMode = RenderMode.ScreenSpaceCamera;
+                    canvas.worldCamera = renderCam;
+                    canvas.sortingOrder = 50;
+                    Debug.Log("[ItemChecklist] Canvas wired to API.Rendering.UICamera (Screen Space - Camera)");
+                }
+                else
+                {
+                    canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                    canvas.sortingOrder = 32000;
+                    Debug.LogWarning("[ItemChecklist] UICamera missing Camera component — falling back to Screen Space - Overlay");
+                }
+            }
+            else
+            {
+                Debug.LogError("[ItemChecklist] Window prefab root missing Canvas component — add Canvas + CanvasScaler + GraphicRaycaster in the Editor");
+                return;
+            }
+
+            // uGUI needs an EventSystem for InputField/Dropdown/Button mouse routing
+            if (EventSystem.current == null)
+            {
+                var esGo = new GameObject("ItemChecklist.EventSystem");
+                UnityEngine.Object.DontDestroyOnLoad(esGo);
+                esGo.AddComponent<EventSystem>();
+                esGo.AddComponent<StandaloneInputModule>();
+                Debug.Log("[ItemChecklist] Created own EventSystem");
             }
 
             // Model + virtual list
