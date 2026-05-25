@@ -4,12 +4,18 @@ using UnityEngine.UI;
 namespace ItemChecklist.UI
 {
     /// <summary>
-    /// MonoBehaviour attached to the root of <c>ItemChecklistWindow.prefab</c>.
-    /// Each <see cref="SerializeField"/> below appears as a slot in the
-    /// Unity Inspector — drag the corresponding GameObject from the
-    /// Hierarchy into the slot to wire it up.
+    /// Root component of <c>ItemChecklistWindow.prefab</c>. Inherits from
+    /// CK's abstract <c>UIelement</c> base — this is what (a) registers
+    /// the window with CK's modal-UI tracking so gameplay input
+    /// (WASD/actions) is blocked while shown, and (b) puts the prefab in
+    /// CK's UICamera-rooted UI layer so the hardware cursor renders on
+    /// top.
+    ///
+    /// <para>Same Item Browser pattern (<c>ItemBrowserUI : ItemBrowserView
+    /// : UIelement</c>). UIelement has no abstract members — we don't
+    /// have to override anything.</para>
     /// </summary>
-    public sealed class ItemChecklistWindowView : MonoBehaviour
+    public sealed class ItemChecklistWindowView : UIelement
     {
         [SerializeField] public InputField searchField;
         [SerializeField] public Dropdown filterDropdown;

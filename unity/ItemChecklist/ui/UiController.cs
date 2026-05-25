@@ -1,6 +1,5 @@
 using PugMod;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace ItemChecklist.UI
@@ -94,26 +93,22 @@ namespace ItemChecklist.UI
                 return;
             }
 
-            root = UnityEngine.Object.Instantiate(prefab);
-            UnityEngine.Object.DontDestroyOnLoad(root);
+            // Parent under CK's UI camera so we inherit its Canvas, its
+            // sort order (cursor stays on top), and so UIelement
+            // registers in the modal-UI hierarchy that blocks gameplay
+            // input while shown. Item Browser pattern.
+            var uiCamera = API.Rendering.UICamera;
+            if (uiCamera == null)
+            {
+                Debug.LogError("[ItemChecklist] API.Rendering.UICamera null — cannot parent UI");
+                return;
+            }
+            root = UnityEngine.Object.Instantiate(prefab, uiCamera.transform);
             view = root.GetComponent<ItemChecklistWindowView>();
             if (view == null)
             {
                 Debug.LogError("[ItemChecklist] Prefab root missing ItemChecklistWindowView component");
                 return;
-            }
-
-            // CK's Rewired event system covers gameplay input, not uGUI
-            // pointer/keyboard routing. Add a standard EventSystem if the
-            // scene doesn't already have one — without it InputField and
-            // Dropdown ignore mouse clicks.
-            if (EventSystem.current == null)
-            {
-                var esGo = new GameObject("ItemChecklist.EventSystem");
-                UnityEngine.Object.DontDestroyOnLoad(esGo);
-                esGo.AddComponent<EventSystem>();
-                esGo.AddComponent<StandaloneInputModule>();
-                Debug.Log("[ItemChecklist] Created own EventSystem");
             }
 
             // Model + virtual list
