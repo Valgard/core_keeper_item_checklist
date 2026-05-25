@@ -120,21 +120,26 @@ ItemChecklistWindow      [Canvas + CanvasScaler + GraphicRaycaster]
 
 ### 4.2 `Window` panel
 
+The window is **modal-style**: centered on screen, fixed 400×700,
+intentionally blocks the play view. (Live-tracking the progress
+counter without opening the modal is a separate, future
+`LiveTrackerBar` prefab — see Phase 5 stub at the end.)
+
 Select `Window`, set in Inspector:
 
 | Component       | Setting           | Value                                 |
 |-----------------|-------------------|---------------------------------------|
-| Rect Transform  | Anchors Min       | X 1, Y 0                              |
-| Rect Transform  | Anchors Max       | X 1, Y 1                              |
-| Rect Transform  | Pivot             | X 1, Y 0.5                            |
+| Rect Transform  | Anchors Min       | X 0.5, Y 0.5                          |
+| Rect Transform  | Anchors Max       | X 0.5, Y 0.5                          |
+| Rect Transform  | Pivot             | X 0.5, Y 0.5                          |
 | Rect Transform  | Pos X / Y / Z     | 0 / 0 / 0                             |
-| Rect Transform  | Width             | 400                                   |
+| Rect Transform  | Width / Height    | 400 / 700                             |
 | Image           | Source Image      | `ui_panel` (sub-sprite of `ui_classic`)|
 | Image           | Image Type        | `Sliced`                              |
 | Image           | Fill Center       | ✓ (checked)                           |
 
-This anchors `Window` to the **right edge of the screen**, full height,
-400 px wide. (Inspector shows `Top 0, Bottom 0` since it's Y-stretched.)
+This centers `Window` in the Canvas (screen middle), fixed size, both
+axes single-point-anchored to the parent's middle.
 
 ### 4.3 `Header` (title bar)
 
@@ -287,6 +292,16 @@ Remove Text component, Add Component → PugText.
    once the Prefab Asset exists)
 4. `File → Save` to persist the scene (just to avoid the "unsaved
    changes" warning when closing the editor)
+
+## Phase 5 (later) — `LiveTrackerBar.prefab`
+
+A second, smaller prefab that shows the progress counter **without**
+opening the modal. Always visible whenever a character is active.
+
+Design open: position (top-right? bottom-center? top-left under
+health bar?), exact format (`291 / 1745 (16.7%)` vs. abbreviated vs.
+icon-prefixed). See conversation with the user — bring this up after
+Phase 1's modal window is verified working in-game.
 
 ## 5. Build and test
 
