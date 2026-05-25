@@ -273,8 +273,12 @@ The ScrollView template creates three nested children: `Viewport` →
 - On `Viewport`: leave the `Image` (used as mask) and `Mask` components
 - On `Content`:
   - Anchors: Min 0/1, Max 1/1, Pivot 0/1 (top-stretch, top-anchored)
-  - Add Component → `Vertical Layout Group` (Padding/Spacing 0 is fine)
-  - Add Component → `Content Size Fitter` → Vertical Fit: `Preferred Size`
+  - **No additional components** — `Content` only needs its
+    auto-created RectTransform. `VirtualScrollList` manages row
+    positions (`anchoredPosition.y = -i * RowHeight`) and content
+    height (`sizeDelta.y = rowCount * RowHeight`) directly. Adding
+    `Vertical Layout Group` or `Content Size Fitter` would overwrite
+    those manual values every frame and break recycling.
 
 ### 4.7 `CounterLabel`
 
