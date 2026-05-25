@@ -178,11 +178,9 @@ Right-click `Window` → `UI → Image`. Rename to `Header`. Settings:
 
 #### 4.3.1 `Title` text
 
-Right-click `Header` → `UI → Image`. Rename to `Title`. Then on the new
-GameObject:
-1. Remove the auto-added `Image` component (⋮ → Remove Component) — we
-   only wanted the RectTransform + UI-layer setup that "UI → Image"
-   gives us for free; the Image itself is unwanted
+Right-click `Header` → `UI → Legacy → Text`. Rename to `Title`. Then on
+the new GameObject:
+1. Remove the auto-added `Text` component (⋮ → Remove Component)
 2. `Add Component → Pug Text`
 3. PugText settings:
    - Text String: `Item Checklist`
@@ -280,9 +278,9 @@ The ScrollView template creates three nested children: `Viewport` →
 
 ### 4.7 `CounterLabel`
 
-Right-click `Window` → `UI → Image`. Rename to `CounterLabel`. Remove
-the auto-added `Image` component (⋮ → Remove Component), then `Add
-Component → Pug Text`.
+Right-click `Window` → `UI → Legacy → Text`. Rename to `CounterLabel`.
+Remove the auto-added `Text` component (⋮ → Remove Component), then
+`Add Component → Pug Text`.
 
 | Component       | Setting           | Value                                 |
 |-----------------|-------------------|---------------------------------------|
