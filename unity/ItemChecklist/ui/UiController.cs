@@ -18,7 +18,6 @@ namespace ItemChecklist.UI
         private ItemChecklistWindowView view;
         private FilterAndSearchModel model;
         private VirtualScrollList list;
-        private UnityInputFieldAdapter inputAdapter;
 
         // UnknownItemSprite is still loaded out of the AssetBundle here
         // (rather than via [SerializeField] on the row prefab) because
@@ -45,30 +44,13 @@ namespace ItemChecklist.UI
             root.SetActive(!root.activeSelf);
             Debug.Log($"[ItemChecklist] window {(root.activeSelf ? "shown" : "hidden")}");
 
-            try
-            {
-                if (root.activeSelf)
-                {
-                    if (inputAdapter == null && view?.searchField != null)
-                        inputAdapter = new UnityInputFieldAdapter(view.searchField);
-                    if (inputAdapter != null)
-                    {
-                        Manager.input.SetActiveInputField(inputAdapter);
-                        view.searchField?.ActivateInputField();
-                        Debug.Log("[ItemChecklist] Input freeze ON");
-                    }
-                }
-                else
-                {
-                    Manager.input.SetActiveInputField(null);
-                    view?.searchField?.DeactivateInputField();
-                    Debug.Log("[ItemChecklist] Input freeze OFF");
-                }
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogWarning($"[ItemChecklist] Input-freeze toggle failed: {e.Message}");
-            }
+            // No Manager.input.SetActiveInputField anymore — UIelement
+            // takes care of blocking gameplay input automatically. CK's
+            // UIMouse casts every activeInputField to UIelement, which
+            // would throw InvalidCastException every frame for our
+            // TextInputInterface-only adapter. The search field's text
+            // focus comes from the standard EventSystem (auto-created
+            // by Unity if absent on the UICamera).
         }
 
         private void BuildUi()
