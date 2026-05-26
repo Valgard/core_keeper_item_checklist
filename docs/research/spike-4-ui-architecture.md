@@ -4,12 +4,32 @@
 **Status:** Decision: **Option A — CoreLib + SpriteRenderer**.
 **Iter-1 validated 2026-05-25** (window opens centered, themed
 9-slice wood background, PugText title visible, cursor on top, WASD/mouse
-blocked, Escape closes, F1 reopens). Bonus: `Manager.ui.GetCraftingUITheme(...)`
-empirically verified working in sandbox (Stone-switch + diagnostic log proved
-theme overrides editor sprite at runtime; vanilla sprite naming is
-`crafting_ui_hand_NN`). Iter-2 pending (feature port: ItemRow + VirtualScrollList
-+ FilterBar + SearchInput). See
-[Architecture Options](#architecture-options); Options B and C are
+blocked, Escape closes, F1 reopens).
+**Iter-2 PARTIAL 2026-05-25** (commit `2b4b824`): ItemRow.prefab +
+display-layer + IScrollable wiring. 3 bugs deferred: mouse-wheel scroll
+dead, multi-open PugText pool leak, viewport clipping.
+**Iter-3 PARTIAL DONE 2026-05-26**: `pugText.Clear()` loop in `ClearRows`
+fixes the pool leak under current mod.io CoreLib runtime (4.0.3-Code).
+Phase 3 PASS verified (13× F1 + disconnect, texts persist; main menu
+texts intact after first open). Scroll-fix and background-bug deferred:
+- **Iter-3.5** (Scroll): `SetScrollValue(0f)` was tested and has
+  destructive side-effects on layout (rows start at window-top instead
+  of below title). Needs decompile-spike on `Pug.UnityExtensions.dll`'s
+  `UIScrollWindow` for a side-effect-free activation path.
+- **Iter-3.6** (Background quadrat small): empirically falsified all
+  reachable hypotheses (Iter-1+2+3 code, CoreLib 4.0.0 vs 4.0.3 vs 4.0.4
+  in every Build-Time/Runtime combination, all other 17 mods disabled).
+  Cause lies in CK game files, Wine bottle sprite-atlas cache, or
+  unknown environmental factor. Requires forensic Iter with new
+  hypotheses.
+- **Iter-3.7** (latent): empirically verified that `pugText.Clear()`
+  fix works under CoreLib 4.0.3 but NOT under real 4.0.4 (UI pool
+  behaviour differs measurably). Currently mod.io hosts a build labeled
+  "4.0.4" but binary-identical to commit `3c99dc44` (CoreLib 4.0.3, 30
+  April 2026). If mod.io ever publishes the real 4.0.4 (commit
+  `31242dbe`, 6 May 2026), Iter-3 fix becomes obsolete.
+
+See [Architecture Options](#architecture-options); Options B and C are
 documented below as considered alternatives.
 
 ## Question

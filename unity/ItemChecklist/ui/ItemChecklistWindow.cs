@@ -104,7 +104,17 @@ namespace ItemChecklist.UI
         private void ClearRows()
         {
             foreach (var r in _spawnedRows)
-                if (r != null) Object.Destroy(r.gameObject);
+            {
+                if (r == null) continue;
+                // IB-pattern (BasicEntriesListRenderer.ClearList): release PugText pool
+                // resources before destroying the GameObject. Without this, PugText's
+                // internal shared pool leaks on every Destroy, which manifests as text
+                // disappearing on 2nd+ open and main menu PugTexts going blank after
+                // first window open.
+                foreach (var pugText in r.GetComponentsInChildren<PugText>(true))
+                    pugText.Clear();
+                Object.Destroy(r.gameObject);
+            }
             _spawnedRows.Clear();
         }
     }
