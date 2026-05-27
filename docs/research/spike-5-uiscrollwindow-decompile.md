@@ -529,3 +529,24 @@ Plan-Grep `m_SortingLayer|m_SortingOrder|m_Name:` findet **kein** PugText-Sortin
 ### Konsequenz für Iter-3.5c
 
 Spec für Iter-3.5c (separat) basiert auf IB-1:1-mit-Prefab-Edits: ItemRow.prefab + ItemChecklistWindow.prefab werden IB-konform angepasst (Layer `GUI` per TagManager-Verifikation, Orders in `40..55`-Range matched IB's EntriesDivider+UnavailableHeader, MaskInteraction prefab-set). Pure Runtime wird verworfen.
+
+---
+
+## Closure 2026-05-28 — Iter-3.5c Clipping produktiv
+
+Spike-5 + Iter-3.5b-Findings vollständig umgesetzt. IB's SpriteMask + Layer-GUI + Custom-Range-Filter funktioniert 1:1 in ItemChecklist nach Prefab-Edits auf ItemRow + Window. **6/6 Test-Phasen PASS**, Zero-Code-Iteration.
+
+Final commits auf main (ff-merged, kein squash): `bde774a..f3b25aa` (9 commits — 5 WIP-Renderer + 1 feat-ContentsMask + 1 test-marker + 1 fix-enlarge + 1 polish-tighten).
+
+**Implementation-Highlights die der Spike vorhergesagt hat:**
+- Layer GUI uniqueID `1241602095` (TagManager) — bestätigt zur Runtime via grep auf Bundle-Manifest
+- Orders 45/48/49/49/50 für Row-Renderer — funktional ohne Konflikte
+- Title sentinel-resolved auf Layer GUI Order 9999 — outside Custom-Range, mask-immune (visuell verifiziert)
+- Window.Background Layer Default Order 10 — outside Mask-Layer, unaffected
+
+**Discoveries die der Spike NICHT vorhergesagt hat:**
+1. `mask_sprite.png.meta` muss `spritePixelsToUnits: 1` haben (Override des CK-SDK-Standards `pPU: 16`). Bei pPU=16 ist die effektive 1×1-Sprite-Geometrie nur 0.0625 Units → Transform-Scale (11, 6) wird zu winzigen 0.69 × 0.375 Units, Mask deckt nur ein Mini-Quadrat. Fix: .meta-Edit, Build erkennt die .meta-Änderung und re-importiert das Asset (sha256-Diff bestätigt).
+2. **Mask-Geometry-Math ist NICHT trivial:** RowsContainer hat `localPosition: (0, 1.5, 0)` relativ zum Window-Root. Wenn die Mask Kind von RowsContainer ist, muss sie ein `-1.5`-Y-Offset bekommen damit ihr Zentrum auf das Background-Zentrum trifft. UND: für Title-Region-Freihaltung muss die Mask zusätzlich nach unten geshiftet werden (Final: Position `(0, -2.25, 0)` + Scale `(11, 6, 1)`).
+3. **Bridge-Folder ist gitignored** und enthielt überraschend einen Text-Stub statt PNG (`white_pixel.png`). Iter-3.5c hat den ersetzt durch `mask_sprite.png` mit korrekter PIL-generierter 1×1 RGBA-Geometry. Bridge-Folder synchronisiert via expliziten `cp` (link.sh handhabt nur den Mod-Folder-Symlink ins SDK, nicht Bridge-Sync zwischen main und Worktree).
+
+Diese drei Discoveries waren NICHT aus IB-Source ableitbar — sind ItemChecklist-spezifische Prefab-Konstellations-Eigenheiten.
