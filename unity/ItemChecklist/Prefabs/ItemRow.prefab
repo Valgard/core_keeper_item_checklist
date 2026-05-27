@@ -324,9 +324,9 @@ MonoBehaviour:
     outline: 0
     outlineColor: {r: 0, g: 0, b: 0, a: 0}
     supportColorTags: 0
-    sortingLayer: -2147483648
-    orderInLayer: 9999
-    maskInteraction: 0
+    sortingLayer: 1241602095
+    orderInLayer: 49
+    maskInteraction: 1
   styleOverrides: []
   usePooledResources: 1
   freeResourcesOnDisable: 0
