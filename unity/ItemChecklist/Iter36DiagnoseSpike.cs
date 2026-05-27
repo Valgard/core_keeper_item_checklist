@@ -27,9 +27,15 @@ namespace ItemChecklist
                 string text = fields.text ?? "<null>";
                 Debug.Log($"[Iter36Diag] anchor={anchorTag} probeID={ProbeObjectId} text=\"{text}\" managerMainPlayerNull={Manager.main?.player == null}");
             }
+            catch (NullReferenceException ex)
+            {
+                Debug.Log($"[Iter36Diag] anchor={anchorTag} probeID={ProbeObjectId} THREW NullReferenceException: {ex.Message} managerMainPlayerNull={Manager.main?.player == null}");
+            }
             catch (Exception ex)
             {
-                Debug.Log($"[Iter36Diag] anchor={anchorTag} probeID={ProbeObjectId} THREW {ex.GetType().Name}: {ex.Message} managerMainPlayerNull={Manager.main?.player == null}");
+                // Sandbox-safe: do NOT call ex.GetType().Name — Type.Name resolves
+                // to MemberInfo.get_Name() and is blocked by the Roslyn sandbox.
+                Debug.Log($"[Iter36Diag] anchor={anchorTag} probeID={ProbeObjectId} THREW (non-NRE): {ex.Message} managerMainPlayerNull={Manager.main?.player == null}");
             }
         }
     }
