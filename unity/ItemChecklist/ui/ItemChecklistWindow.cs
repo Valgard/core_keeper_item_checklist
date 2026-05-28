@@ -72,8 +72,18 @@ namespace ItemChecklist.UI
             }
 
             if (title != null)
-                title.Render("Item Checklist");
+                title.Render(FormatTitle());
         }
+
+        private string FormatTitle()
+        {
+            var catalog = ItemChecklistMod.Catalog;
+            var state = DiscoveredState.Instance;
+            if (catalog == null || catalog.Count == 0)
+                return "Item Checklist";
+            return $"Item Checklist — {state.Count} / {catalog.Count}";
+        }
+
         /// <summary>
         /// Re-binds the visible rows from the current ItemCatalog. Called by
         /// ItemCatalogLocChangeHook after a synchronous re-bake. No-op when the
