@@ -120,6 +120,11 @@ namespace ItemChecklist
                     // tracking becomes desirable.
                     if (od.variation != 0) continue;
 
+                    // Iter-3.7: Cooked-Food family-items (IDs in [9500,9599]) are
+                    // handled by the α-enumeration loop further down — skip them here
+                    // so they don't appear as variation=0 placeholder entries.
+                    if (od.objectID.IsCookedFood()) continue;
+
                     var info = PugDatabase.GetObjectInfo(od.objectID, od.variation);
                     if (info == null) continue;
 
@@ -147,17 +152,6 @@ namespace ItemChecklist
                     // when the game signals this item can't be localized, swap to the raw term.
                     if (locDontLocalize && !string.IsNullOrEmpty(rawText))
                         locText = rawText;
-
-                    // CK's DE-locale builds Cooked-Food display names as "{ingredient} -{base}"
-                    // (e.g. "Pilz -Suppe"). When the ingredient placeholder is empty at
-                    // variation 0 (no Recipe-ContainedObjects set), the result starts with
-                    // " -" — empirically verified 2026-05-28 via DIAG: " -Pudding", " -Salat",
-                    // " -Suppe" for CookedPudding/CookedSalad/CookedSoup etc. (firstCharU+0020,
-                    // pos1 = U+002D). Strip leading whitespace + dashes — safe because
-                    // legitimate names don't start with that pattern; legitimate compound
-                    // names like "Pilz-Suppe" have the dash interior, not leading.
-                    if (!string.IsNullOrEmpty(locText)) locText = locText.TrimStart(' ', '-');
-                    if (!string.IsNullOrEmpty(rawText)) rawText = rawText.TrimStart(' ', '-');
 
                     // PascalCaseSplitter fallback when both passes failed to produce a name.
                     if (string.IsNullOrEmpty(locText))
