@@ -25,9 +25,17 @@ namespace ItemChecklist.UI
         public bool ShowWithPlayerInventory => false;
         public bool ShouldPlayerCraftingShow => false;
 
+        public static ItemChecklistWindow Instance { get; private set; }
+
         protected void Awake()
         {
+            Instance = this;
             HideUI();
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
         }
 
         public void ShowUI()
@@ -66,6 +74,17 @@ namespace ItemChecklist.UI
             if (title != null)
                 title.Render("Item Checklist");
         }
+        /// <summary>
+        /// Re-binds the visible rows from the current ItemCatalog. Called by
+        /// ItemCatalogLocChangeHook after a synchronous re-bake. No-op when the
+        /// window is not active — there is nothing to refresh.
+        /// </summary>
+        public void RebindRows()
+        {
+            if (!gameObject.activeSelf) return;
+            SpawnRows();
+        }
+
         private void SpawnRows()
         {
             ClearRows();
