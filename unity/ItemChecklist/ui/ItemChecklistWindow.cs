@@ -83,7 +83,8 @@ namespace ItemChecklist.UI
             var state = DiscoveredState.Instance;
             if (catalog == null || catalog.Count == 0)
                 return "Item Checklist";
-            return $"Item Checklist — {state.Count} / {catalog.Count}";
+            float percent = 100f * state.Count / catalog.Count;
+            return $"Item Checklist — {state.Count} / {catalog.Count} ({percent:F1}%)";
         }
 
         private void OnDiscoveryChanged()
