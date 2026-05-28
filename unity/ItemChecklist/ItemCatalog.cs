@@ -108,10 +108,10 @@ namespace ItemChecklist
                 }
 
                 // First pass: collect localized + unlocalized names per accepted od.
-                var localizedNames   = new Dictionary<ObjectDataCD, string>();
-                var unlocalizedNames = new Dictionary<ObjectDataCD, string>();
+                var localizedNames   = new Dictionary<long, string>();  // key = PackKey(objId, variation)
+                var unlocalizedNames = new Dictionary<long, string>();
                 var accepted         = new List<ObjectDataCD>();
-                var iconCache        = new Dictionary<ObjectDataCD, Sprite>();
+                var iconCache        = new Dictionary<long, Sprite>();
 
                 foreach (var od in PugDatabase.objectsByType.Keys)
                 {
@@ -159,10 +159,64 @@ namespace ItemChecklist
                     if (string.IsNullOrEmpty(rawText))
                         rawText = PascalCaseSplitter.Split(od.objectID.ToString());
 
-                    localizedNames[od]   = locText;
-                    unlocalizedNames[od] = rawText;
+                    long key = DiscoveredState.PackKey((int)od.objectID, od.variation);
+                    localizedNames[key]   = locText;
+                    unlocalizedNames[key] = rawText;
                     accepted.Add(od);
-                    iconCache[od] = info.smallIcon != null ? info.smallIcon : info.icon;
+                    iconCache[key] = info.smallIcon != null ? info.smallIcon : info.icon;
+                }
+
+                // ─── Loop 2: α-enumeration for Cooked-Food permutations ─────────
+                // Pre-cache: ingredient → turnsIntoFood (Base-Tier-Family)
+                //            family → (rareId, epicId) tier-versions
+                // Note: tierMap is populated for ALL 45 Cooked-Food items
+                // (incl. Rare/Epic), but only base-tier IDs are ever looked up
+                // below — Rare/Epic items' tierMap entries are inert. Cost is
+                // ~30 wasted dict insertions out of ~45 — not worth filtering.
+                var turnsInto = new Dictionary<ObjectID, ObjectID>();
+                var tierMap = new Dictionary<ObjectID, (ObjectID rare, ObjectID epic)>();
+                foreach (var od in PugDatabase.objectsByType.Keys)
+                {
+                    if (od.variation != 0) continue;
+                    if (PugDatabase.TryGetComponent<CookingIngredientCD>(od, out var ing)
+                        && !CookedFoodCD.IsIngredientObsolete(od.objectID))
+                    {
+                        turnsInto[od.objectID] = ing.turnsIntoFood;
+                    }
+                    if (od.objectID.IsCookedFood()
+                        && PugDatabase.TryGetComponent<CookedFoodCD>(od, out var cf))
+                    {
+                        tierMap[od.objectID] = (cf.rareVersion, cf.epicVersion);
+                    }
+                }
+
+                // Symmetric cartesian: GetFoodVariation(a,b) == GetFoodVariation(b,a),
+                // so we only iterate j >= i and add each pair once.
+                var ingredients = new List<ObjectID>(turnsInto.Keys);
+                for (int i = 0; i < ingredients.Count; i++)
+                for (int j = i; j < ingredients.Count; j++)
+                {
+                    var i1 = ingredients[i];
+                    var i2 = ingredients[j];
+                    var primary = CookedFoodCD.GetPrimaryIngredient(i1, i2);
+                    if (!turnsInto.TryGetValue(primary, out var baseFamily)) continue;
+                    int variation = CookedFoodCD.GetFoodVariation(i1, i2);
+
+                    // 3 tier-variants per pair, same variation, different objectIDs.
+                    AddCookedEntry(
+                        new ObjectDataCD { objectID = baseFamily, variation = variation },
+                        localizedNames, unlocalizedNames, iconCache, accepted);
+                    if (tierMap.TryGetValue(baseFamily, out var tiers))
+                    {
+                        if (tiers.rare != ObjectID.None)
+                            AddCookedEntry(
+                                new ObjectDataCD { objectID = tiers.rare, variation = variation },
+                                localizedNames, unlocalizedNames, iconCache, accepted);
+                        if (tiers.epic != ObjectID.None)
+                            AddCookedEntry(
+                                new ObjectDataCD { objectID = tiers.epic, variation = variation },
+                                localizedNames, unlocalizedNames, iconCache, accepted);
+                    }
                 }
 
                 // Conflict detection: count occurrences of each localized name.
@@ -174,15 +228,16 @@ namespace ItemChecklist
                 var list = new List<Entry>(accepted.Count);
                 foreach (var od in accepted)
                 {
-                    string finalName = localizedNames[od];
+                    long key = DiscoveredState.PackKey((int)od.objectID, od.variation);
+                    string finalName = localizedNames[key];
                     if (nameCount[finalName] > 1)
                     {
-                        string rawName = unlocalizedNames[od];
+                        string rawName = unlocalizedNames[key];
                         if (!string.IsNullOrEmpty(rawName) && rawName != finalName)
                             finalName = $"{finalName} ({rawName})";
                     }
                     string modOrigin = ResolveModOrigin(od, modIdToName);
-                    list.Add(new Entry((int)od.objectID, od.variation, finalName, iconCache[od], modOrigin));
+                    list.Add(new Entry((int)od.objectID, od.variation, finalName, iconCache[key], modOrigin));
                 }
 
                 entries = list
@@ -297,6 +352,38 @@ namespace ItemChecklist
         {
             if (string.IsNullOrEmpty(name)) return string.Empty;
             return name.ToLowerInvariant().Replace("-", "").Replace("_", "").Replace(" ", "");
+        }
+
+        /// <summary>
+        /// Resolve+add a concrete cooked-food permutation entry. Shares the
+        /// two-pass name/icon resolution + accepted-list with Loop 1 by writing
+        /// into the same Dictionary instances (passed via parameters since they
+        /// are local to Bake()).
+        /// </summary>
+        private void AddCookedEntry(
+            ObjectDataCD od,
+            Dictionary<long, string> localizedNames,
+            Dictionary<long, string> unlocalizedNames,
+            Dictionary<long, Sprite> iconCache,
+            List<ObjectDataCD> accepted)
+        {
+            var info = PugDatabase.GetObjectInfo(od.objectID, od.variation);
+            if (info == null) return;
+
+            var (locText, locDontLocalize) = ResolveOne(od, localize: true);
+            var (rawText, _)               = ResolveOne(od, localize: false);
+            if (locDontLocalize && !string.IsNullOrEmpty(rawText))
+                locText = rawText;
+            if (string.IsNullOrEmpty(locText))
+                locText = PascalCaseSplitter.Split(od.objectID.ToString());
+            if (string.IsNullOrEmpty(rawText))
+                rawText = PascalCaseSplitter.Split(od.objectID.ToString());
+
+            long key = DiscoveredState.PackKey((int)od.objectID, od.variation);
+            localizedNames[key]   = locText;
+            unlocalizedNames[key] = rawText;
+            accepted.Add(od);
+            iconCache[key] = info.smallIcon != null ? info.smallIcon : info.icon;
         }
     }
 }
