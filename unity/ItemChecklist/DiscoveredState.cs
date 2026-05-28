@@ -5,7 +5,10 @@ namespace ItemChecklist
 {
     /// <summary>
     /// In-memory mirror of <c>CharacterData.discoveredObjects2</c> for the
-    /// currently active character. Populated by:
+    /// currently active character. Keys are packed (objectId, variation)
+    /// tuples — see <see cref="PackKey"/>.
+    ///
+    /// Populated by:
     /// <list type="bullet">
     ///   <item><see cref="CharacterDataDiscoverySnapshot"/> on save-load
     ///     (Harmony postfix on <c>CharacterData.OnAfterDeserialize</c>)</item>
@@ -25,31 +28,41 @@ namespace ItemChecklist
         private static readonly DiscoveredState _instance = new DiscoveredState();
         public static DiscoveredState Instance => _instance;
 
-        private readonly HashSet<int> ids = new HashSet<int>();
+        private readonly HashSet<long> keys = new HashSet<long>();
 
-        public int Count => ids.Count;
-        public bool IsDiscovered(int objectId) => ids.Contains(objectId);
+        /// <summary>
+        /// Pack an (objectId, variation) pair into a single long key.
+        /// Upper 32 bits: objectId. Lower 32 bits: variation (as uint, to
+        /// preserve sign-bit identity since CookedFoodCD encodes via
+        /// <c>(primary &lt;&lt; 16) | secondary</c>).
+        /// </summary>
+        public static long PackKey(int objectId, int variation) =>
+            ((long)objectId << 32) | (uint)variation;
 
-        /// <summary>Raised when a single new id is added.</summary>
-        public event Action<int> Discovered;
+        public int Count => keys.Count;
+        public bool IsDiscovered(int objectId, int variation) =>
+            keys.Contains(PackKey(objectId, variation));
+
+        /// <summary>Raised when a single new (objectId, variation) is added.</summary>
+        public event Action<int, int> Discovered;
         /// <summary>Raised after any mutation (Snapshot or AddOne).</summary>
         public event Action Changed;
 
-        internal void AddOne(int objectId)
+        internal void AddOne(int objectId, int variation)
         {
-            if (ids.Add(objectId))
+            if (keys.Add(PackKey(objectId, variation)))
             {
-                // Diagnostic — remove once UI gives visible feedback (Phase F).
-                UnityEngine.Debug.Log($"[ItemChecklist] AddOne: {objectId} (total {ids.Count})");
-                Discovered?.Invoke(objectId);
+                UnityEngine.Debug.Log(
+                    $"[ItemChecklist] AddOne: ({objectId}, {variation}) (total {keys.Count})");
+                Discovered?.Invoke(objectId, variation);
                 Changed?.Invoke();
             }
         }
 
-        internal void Snapshot(IEnumerable<int> objectIds)
+        internal void Snapshot(IEnumerable<long> packedKeys)
         {
-            ids.Clear();
-            foreach (var id in objectIds) ids.Add(id);
+            keys.Clear();
+            foreach (var k in packedKeys) keys.Add(k);
             Changed?.Invoke();
         }
     }

@@ -59,7 +59,7 @@ namespace ItemChecklist.UI
             for (int i = 0; i < catalog.Count; i++)
             {
                 var e = catalog.GetByIndex(i);
-                bool isDisc = state.IsDiscovered(e.ObjectId);
+                bool isDisc = state.IsDiscovered(e.ObjectId, e.Variation);
 
                 // Filter
                 if (filter == DiscoveryFilter.Discovered && !isDisc) continue;

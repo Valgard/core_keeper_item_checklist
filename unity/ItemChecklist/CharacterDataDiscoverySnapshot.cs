@@ -44,7 +44,7 @@ namespace ItemChecklist
         /// deserializes each character slot. Read by
         /// <see cref="ItemChecklistMod.Update"/> once the active player
         /// spawns.</summary>
-        internal static readonly Dictionary<string, int[]> Cache = new Dictionary<string, int[]>();
+        internal static readonly Dictionary<string, long[]> Cache = new Dictionary<string, long[]>();
 
         [HarmonyPostfix]
         static void After(CharacterData __instance)
@@ -55,20 +55,23 @@ namespace ItemChecklist
             if (string.IsNullOrEmpty(guid)) return;
 
             int count = __instance.discoveredObjects2.Count;
-            int[] ids;
+            long[] packedKeys;
             if (count == 0)
             {
-                ids = System.Array.Empty<int>();
+                packedKeys = System.Array.Empty<long>();
             }
             else
             {
-                ids = new int[count];
+                packedKeys = new long[count];
                 for (int i = 0; i < count; i++)
-                    ids[i] = (int) __instance.discoveredObjects2[i].objectID;
+                {
+                    var record = __instance.discoveredObjects2[i];
+                    packedKeys[i] = DiscoveredState.PackKey((int) record.objectID, record.variation);
+                }
             }
 
             // Cache by guid for later lookup.
-            Cache[guid] = ids;
+            Cache[guid] = packedKeys;
 
             // Active-char detection: if SetCharacterId(id) was just called,
             // this deserialize is for the active char (per CK's sequential

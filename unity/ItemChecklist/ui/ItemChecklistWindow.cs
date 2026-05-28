@@ -101,7 +101,8 @@ namespace ItemChecklist.UI
                 go.transform.localPosition = new Vector3(0, y, 0);
                 var row = go.GetComponent<ItemRow>();
                 if (row != null)
-                    row.Bind(entry.ObjectId, entry.Icon, entry.DisplayName, state.IsDiscovered(entry.ObjectId));
+                    row.Bind(entry.ObjectId, entry.Icon, entry.DisplayName,
+                        state.IsDiscovered(entry.ObjectId, entry.Variation));
                 _spawnedRows.Add(row);
                 y -= ItemRow.RowHeight;
             }

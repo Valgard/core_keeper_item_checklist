@@ -59,11 +59,12 @@ namespace ItemChecklist
         }
 
         private Entry[] entries = Array.Empty<Entry>();
-        private readonly Dictionary<int, int> idToIndex = new Dictionary<int, int>();
+        private readonly Dictionary<long, int> keyToIndex = new Dictionary<long, int>();
 
         public int Count => entries.Length;
         public Entry GetByIndex(int index) => entries[index];
-        public bool TryGetIndex(int objectId, out int index) => idToIndex.TryGetValue(objectId, out index);
+        public bool TryGetIndex(int objectId, int variation, out int index) =>
+            keyToIndex.TryGetValue(DiscoveredState.PackKey(objectId, variation), out index);
 
         /// <summary>
         /// Build the catalog. Iterates every <c>ObjectDataCD</c> in
@@ -194,9 +195,9 @@ namespace ItemChecklist
                     .OrderBy(e => e.DisplayName, StringComparer.OrdinalIgnoreCase)
                     .ToArray();
 
-                idToIndex.Clear();
+                keyToIndex.Clear();
                 for (int i = 0; i < entries.Length; i++)
-                    idToIndex[entries[i].ObjectId] = i;
+                    keyToIndex[DiscoveredState.PackKey(entries[i].ObjectId, entries[i].Variation)] = i;
 
                 Debug.Log($"[ItemChecklist] ItemCatalog baked: {entries.Length} items");
             }

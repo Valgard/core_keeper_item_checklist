@@ -17,8 +17,8 @@ namespace ItemChecklist
         [HarmonyPostfix]
         static void After(ObjectDataCD objectData, bool __result)
         {
-            if (__result)
-                DiscoveredState.Instance.AddOne((int) objectData.objectID);
+            if (!__result) return;
+            DiscoveredState.Instance.AddOne((int) objectData.objectID, objectData.variation);
         }
     }
 }
