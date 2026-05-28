@@ -30,11 +30,13 @@ namespace ItemChecklist.UI
         protected void Awake()
         {
             Instance = this;
+            DiscoveredState.Instance.Changed += OnDiscoveryChanged;
             HideUI();
         }
 
         private void OnDestroy()
         {
+            DiscoveredState.Instance.Changed -= OnDiscoveryChanged;
             if (Instance == this) Instance = null;
         }
 
@@ -82,6 +84,15 @@ namespace ItemChecklist.UI
             if (catalog == null || catalog.Count == 0)
                 return "Item Checklist";
             return $"Item Checklist — {state.Count} / {catalog.Count}";
+        }
+
+        private void OnDiscoveryChanged()
+        {
+            // Title-Refresh is cheap; row-level update only on next window-open
+            // (Iter-3.8 could add single-row-live-update).
+            if (title == null) return;
+            if (!gameObject.activeSelf) return;
+            title.Render(FormatTitle());
         }
 
         /// <summary>
