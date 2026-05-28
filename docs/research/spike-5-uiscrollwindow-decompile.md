@@ -550,3 +550,68 @@ Final commits auf main (ff-merged, kein squash): `bde774a..f3b25aa` (9 commits �
 3. **Bridge-Folder ist gitignored** und enthielt überraschend einen Text-Stub statt PNG (`white_pixel.png`). Iter-3.5c hat den ersetzt durch `mask_sprite.png` mit korrekter PIL-generierter 1×1 RGBA-Geometry. Bridge-Folder synchronisiert via expliziten `cp` (link.sh handhabt nur den Mod-Folder-Symlink ins SDK, nicht Bridge-Sync zwischen main und Worktree).
 
 Diese drei Discoveries waren NICHT aus IB-Source ableitbar — sind ItemChecklist-spezifische Prefab-Konstellations-Eigenheiten.
+
+## Iter-3.6 Closing-Addendum (2026-05-28)
+
+DisplayName-Resolution produktiv:
+
+- **Vanilla-Items** zeigen lokalisierte Namen ✅ (Phase 2 PASS — empirisch
+  verifiziert per F1-Window-Stichprobe: „Abwrack- & Reparatur-Station",
+  „Abenteurer-Hut", „Antiker Brunnen" etc.)
+- **Welt-Load-Hook-Timing** ✅ (Phase 3 PASS — Player.log zeigt
+  `ItemCatalog baked: 1754 items` an Line 615 vor `Hotkey: opening UI`
+  an Line 620)
+- **Konflikt-Notes**: nicht-empirisch verifiziert (kein Konflikt-erzeugender
+  Mod parat); strukturell implementiert via `ItemCatalog`-Pass 2
+- **Loc-Change-Re-Bake** ✅ (Phase 5 PASS — empirisch verifiziert:
+  Spracheinstellung DE→EN führte zu 6-7 OnLocalizeEvent-Trigger-Cluster
+  (= einmal pro Sprach-Durchschalt-Schritt, CK hat keine direkte
+  Sprachwahl), Items werden live re-baked, F1-Window zeigt EN-Namen
+  ohne Welt-Reload)
+- **Regression Iter-3.5c (Clipping)** ✅ (Phase 6 PASS — User-Bestätigung)
+- **Regression Iter-3 (Pool-Leak)** ✅ (Phase 7 PASS — User-Bestätigung)
+
+**Anker-Entscheidungen (D1/D2/D3) siehe `docs/research/iter-3-6-diagnose.md`.**
+
+**Edge-Case-Fix (commit `0183afb`):** CK's DE-Locale baut Cooked-Food-Display-
+Namen als `"{ingredient} -{base}"`. Bei `variation == 0` (kein Recipe-
+ContainedObject) bleibt `{ingredient}` leer → Resultat ist `" -<base>"`
+mit leading space+dash. TrimStart-Fix räumt das weg, Items zeigen jetzt
+sauber „Pudding", „Salat", „Filet" etc. statt „-Pudding" etc. Empirisch
+verifiziert via DIAG-Spike (`firstCharU+0020` für alle Cooked-Items).
+
+**Known limitation deferred to Iter-3.7:** Rare/Epic-Tier-Cooked-Foods
+(z.B. `"Epische  -Torte"` mit DOPPEL-Space) trifft der TrimStart-Fix
+nicht — leading char ist „E", trim greift nicht. Mit Iter-3.7's
+variation-aware Refactor wird das `{ingredient}` mit konkreten
+Recipe-Daten substituiert, der Doppel-Space verschwindet automatisch.
+
+**Iter-3.7-Vorbereitung dokumentiert in
+`docs/research/iter-3-7-cooked-food-discovery-spike.md`:** empirisch
+verifiziert dass CK Recipe-Permutationen via `(objectID, variation)`-Paar
+trackt, wobei `variation` = `CookedFoodCD.GetFoodVariation(primary,
+secondary)` als 32-bit-Encoding der beiden Ingredient-ObjectIDs.
+
+**Commit-Sequenz Iter-3.6 (alle auf branch `iter-3-6`, fast-forward
+auf main ohne Squash):**
+
+```
+docs(spec): iter-3.6 displayname-resolution design                                       (a6de7fa)
+docs(plan): iter-3.6 displayname-resolution implementation plan                          (afc2ed6)
+wip(spike): iter-3.6 diagnose harness — D1 + D2a/D2b/D2c                                 (80fd5a9)
+wip(spike): tighten iter-3.6 diagnose spike                                              (c317514)
+fix(spike): sandbox-safe exception logging in iter-3.6 diagnose harness                  (d9767ad)
+docs(research): iter-3.6 diagnose results D1/D2/D3 + term-path gotcha                    (6983408)
+feat(util): PascalCaseSplitter — pure-function splitter for camel-case identifiers       (66d0e4d)
+feat(catalog): two-pass resolve + conflict-disambiguation + dontLocalize-output-fallback (f914e33)
+feat(hooks): world-load harmony postfix triggers ItemCatalog.Bake() via coroutine        (2100a7d)
+feat(ui): ItemChecklistWindow.Instance singleton + public RebindRows()                   (5e7fa54)
+feat(hooks): loc-change subscribes I2.Loc.OnLocalizeEvent                                (4182779)
+refactor(mod): remove Init() bake-call; subscribe loc-change hook; drop diagnose spike   (d9ae67e)
+feat(catalog): variation-fallback for {placeholder}-template DisplayNames (later dead)   (edbc5c2)
+fix(catalog): strip leading whitespace+dash artifacts from CK-DE Cooked-Food names       (0183afb)
+docs(research): iter-3.7 cooked-food discovery spike — empirical CK API confirmation     (6aee546)
+```
+
+Diese WIP-Commit-Sequenz bleibt unverändert beim Merge (per
+`feedback_frequent_wip_commits_for_bisect` Memory: kein Squash).
