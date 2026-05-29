@@ -51,7 +51,7 @@ DLLs are in CK's installation: `…/Core Keeper/CoreKeeper_Data/Managed/`.
 | `ObjectIDExtensions.IsCookedFood` | `Pug.Base.dll` | Range check `objectID ∈ [9500, 9599]` (max 100 family-item slots). |
 | `ObjectIDExtensions.IsGoldenPlant` | `Pug.Base.dll` | Range `[8100, 8149]`. Used in `GetPrimaryIngredient` tiebreaker. |
 | `InventoryUtility` (~line 1626) | `Pug.Other.dll` | Pick-family logic in non-Burst form: `family = ingredientLookup[primaryPrefabEntity].turnsIntoFood`. The Burst-compiled `ConvertCookedFoodsSystem` does the same. |
-| `CookBookUI` | `Pug.Other.dll` | CK's own cooked-food browser. Reference for `itemSlots`+`MAX_SLOTS`+`SetActive(true/false)`-recycling pattern (future Iter-3.8 virtualization template). Uses `Manager.saves.GetDiscoveredCookedFoods()` as source. |
+| `CookBookUI` | `Pug.Other.dll` | CK's own cooked-food browser. **Not** a viewport recycler: `ItemSlotsUIContainer.InstantiateItemSlots` builds a *fixed* pool of `MAX_ROWS × MAX_COLUMNS` slots (CookBook: 50×5=250) once, and `UpdateFilter` **breaks at `num >= itemSlots.Count`** — entries past slot 250 are never shown; it scrolls by translating the whole pool under the clip mask, recycling nothing. Fine for ≤250 recipes, unusable for ItemChecklist's ~10720 entries. True viewport virtualization (Iter-3.8) is mod-built on `IScrollable.UpdateContainingElements`; CK ships no recycler template. |
 | `I2.Loc.LocalizationManager.OnLocalizeEvent` | `I2.Loc.dll` | Public static `event Action` (no params). Fires after language change via `DoLocalizeAll()` / `Coroutine_LocalizeAll()`. Sandbox-safe (public static event on trusted I2.dll). Fallback if banned: poll `LocalizationManager.CurrentLanguage` in a `ManagedUpdate` postfix (ItemBrowser-proven pattern — compare against cached value, trigger on change). |
 | `PlayerController.GetObjectName` | `Pug.Other.dll` | `GetObjectName(buf, localize: bool)` — second param is `bool localize`. Passing `false` yields the raw I2 term path (e.g. `"Items/LargeWaterCan"`), not the display name. IB pattern (ObjectUtility.cs:97–108): `localizedName = GetObjectName(buf, true).text`; `unlocalizedName = GetObjectName(buf, false).text`; if `fields.dontLocalize` → use unlocalizedName as fallback. |
 | `UIScrollWindow.SetScrollValue` | `Pug.Other.dll` | `SetScrollValue(float normalizedScrollValue)`: `1f` → top of list (lerp → minScrollPos=0, content.localY=0); `0f` → bottom (content shifted up by full height). Use `scrollWindow.ResetScroll()` for "go to top" — equivalent to `SetScrollValue(1f)`. Post-content-spawn sequence (IB EntriesList.SetEntries pattern): set scrollable via `API.Reflection.SetValue`, invoke `UpdateScrollHeight` via `API.Reflection.Invoke`, then call `SetScrollValue(1f)`. Full internals in `docs/architecture.md § UIScrollWindow Reference`. |
@@ -80,10 +80,12 @@ Epic) are looked up via `tierMap[baseFamily]` from `CookedFoodCD`.
 - **PugText pool-leak fix** in `ItemChecklistWindow.ClearRows`: each
   spawned row's `PugText`-children get `Clear()` called before
   `Object.Destroy(go)`. Without this, the shared pool leaks per Destroy
-  and main-menu PugTexts go blank after the first window-open. Note:
-  Iter-3.8 may invert this — if rows are kept persistent across
-  Hide/Show cycles, `Clear()` becomes only-needed at `OnDestroy` and
-  before `RebindRows`'s re-spawn.
+  and main-menu PugTexts go blank after the first window-open. As of
+  Iter-3.8 this inverted: rows live in a persistent pool and are no
+  longer destroyed on Hide, so the per-Destroy `Clear()` moved to
+  `ItemChecklistContent.OnDestroy` (pool teardown only). Because rows
+  are not destroyed per close, the original main-menu-blanking symptom
+  can no longer occur.
 - **`ex.GetType().Name` inside a catch block is sandbox-banned.** `Type.Name`
   resolves to `MemberInfo.get_Name()` which is blocked by Roslyn's code-security
   verification. Symptom: `Illegal Member References = '1'`, `CompileFailed`.
