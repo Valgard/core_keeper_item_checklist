@@ -140,10 +140,19 @@ lessons that led to this recipe.
 
 ## Iter-Roadmap (live)
 
-As of 2026-05-28: Iter-3.5/3.5c/3.6/3.7 are DONE on main. Pending:
-Iter-3.8 (Persistent-Row-Lifecycle for window-open latency), Iter-4
-(F1-Toggle), Iter-5 (Listen-Sortierung), Iter-6 (Filter+Suche), Iter-7
-(Window-/Style-Polish inkl. Footer-Move). See `git log` for canonical
+As of 2026-05-30: Iter-3.5/3.5c/3.6/3.7/3.8 are DONE on main. Iter-3.8
+replaced the per-entry SpawnRows (one GameObject per ~10718 catalog
+entries, ~905 ms open freeze) with viewport virtualization: a fixed ~5-row
+pool recycled from `IScrollable.UpdateContainingElements`, reporting the
+full catalog height via `GetCurrentWindowHeight`. Open latency dropped to
+~0-7 ms. Invariant from the geometry fix: `UIScrollWindow.windowHeight`
+must equal the SpriteMask height (and the mask top align to row 0's top)
+for the first/last rows to sit flush. Pending: Iter-4 (F1-Toggle), Iter-5
+(Listen-Sortierung), Iter-6 (Filter+Suche — a discovered-only filter was
+prototyped as a throwaway test scaffold in Iter-3.8 and removed; it can
+seed Iter-6), Iter-7 (Window-/Style-Polish inkl. Footer-Move + perfectly
+flush window needs a panel/mask resize to an integer row multiple, and a
+scrollbar is not yet wired in the prefab). See `git log` for canonical
 per-iter merge points and `docs/superpowers/specs/` for design docs.
 
 ## Conventions
