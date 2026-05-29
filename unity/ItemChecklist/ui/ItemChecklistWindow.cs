@@ -15,7 +15,17 @@ namespace ItemChecklist.UI
         public GameObject rowPrefab;      // assigned to ItemRow.prefab in Editor
         public UIScrollWindow scrollWindow;
 
-        private readonly System.Collections.Generic.List<ItemRow> _spawnedRows = new System.Collections.Generic.List<ItemRow>();
+        private ItemChecklistContent _content;
+
+        private ItemChecklistContent Content
+        {
+            get
+            {
+                if (_content == null && rowsContent != null)
+                    _content = rowsContent.GetComponent<ItemChecklistContent>();
+                return _content;
+            }
+        }
 
         private static readonly MemberInfo MiScrollable = typeof(UIScrollWindow).GetMembersChecked().FirstOrDefault(x => x.GetNameChecked() == "_scrollable");
         private static readonly MemberInfo MiUpdateScrollHeight = typeof(UIScrollWindow).GetMembersChecked().FirstOrDefault(x => x.GetNameChecked() == "UpdateScrollHeight");
@@ -44,13 +54,42 @@ namespace ItemChecklist.UI
         {
             root.SetActive(true);
             ApplyTheme();
-            SpawnRows();
+            PopulateContent();
         }
 
         public void HideUI()
         {
-            ClearRows();
+            // Rows persist in the pool across hide/show; no per-entry Destroy.
             root.SetActive(false);
+        }
+
+        private void PopulateContent()
+        {
+            var content = Content;
+            var catalog = ItemChecklistMod.Catalog;
+            if (content == null || catalog == null || rowPrefab == null) return;
+
+            float perfT0 = UnityEngine.Time.realtimeSinceStartup;
+
+            content.Init(rowPrefab);
+            content.EnsurePool();
+            content.SetCount(catalog.Count);
+
+            // Wire IScrollable + refresh scroll range, then snap to top. Uses
+            // API.Reflection (sandbox-safe), NOT System.Reflection on MemberInfo.Name.
+            if (scrollWindow != null)
+            {
+                API.Reflection.SetValue(MiScrollable, scrollWindow, content);
+                API.Reflection.Invoke(MiUpdateScrollHeight, scrollWindow);
+                scrollWindow.ResetScroll();   // SetScrollValue(1f) = top
+            }
+            // Forced rebind so states changed while hidden are reflected even
+            // though firstIndex is again 0 after ResetScroll.
+            content.RefreshVisible();
+
+            float perfMs = (UnityEngine.Time.realtimeSinceStartup - perfT0) * 1000f;
+            UnityEngine.Debug.Log(
+                $"[ItemChecklist] PERF spawn={perfMs:F0}ms pool={content.PoolSize} count={catalog.Count}");
         }
 
         private void ApplyTheme()
@@ -89,11 +128,11 @@ namespace ItemChecklist.UI
 
         private void OnDiscoveryChanged()
         {
-            // Title-Refresh is cheap; row-level update only on next window-open
-            // (Iter-3.8 could add single-row-live-update).
-            if (title == null) return;
-            if (!gameObject.activeSelf) return;
-            title.Render(FormatTitle());
+            // root (a child) carries visibility; the Window component sits on the
+            // parent GameObject, which stays active even when hidden.
+            if (root == null || !root.activeSelf) return;
+            if (title != null) title.Render(FormatTitle());
+            Content?.RefreshVisible();
         }
 
         /// <summary>
@@ -103,72 +142,8 @@ namespace ItemChecklist.UI
         /// </summary>
         public void RebindRows()
         {
-            if (!gameObject.activeSelf) return;
-            SpawnRows();
-        }
-
-        private void SpawnRows()
-        {
-            ClearRows();
-
-            var catalog = ItemChecklistMod.Catalog;
-            var state = DiscoveredState.Instance;
-            if (catalog == null || state == null || rowPrefab == null) return;
-
-            float perfT0 = UnityEngine.Time.realtimeSinceStartup;
-            float y = 0f;
-            for (int i = 0; i < catalog.Count; i++)
-            {
-                var entry = catalog.GetByIndex(i);
-                var go = Object.Instantiate(rowPrefab, rowsContent);
-                go.transform.localPosition = new Vector3(0, y, 0);
-                var row = go.GetComponent<ItemRow>();
-                if (row != null)
-                    row.Bind(entry.ObjectId, entry.Icon, entry.DisplayName,
-                        state.IsDiscovered(entry.ObjectId, entry.Variation));
-                _spawnedRows.Add(row);
-                y -= ItemRow.RowHeight;
-            }
-
-            // Wire IScrollable so UIScrollWindow knows the content height.
-            // Uses API.Reflection (sandbox-safe), NOT System.Reflection on MemberInfo.Name.
-            if (scrollWindow != null && rowsContent != null)
-            {
-                var content = rowsContent.GetComponent<ItemChecklistContent>();
-                if (content != null)
-                {
-                    content.RowCount = _spawnedRows.Count;
-                    API.Reflection.SetValue(MiScrollable, scrollWindow, content);
-                    API.Reflection.Invoke(MiUpdateScrollHeight, scrollWindow);
-                    // Reset scroll to top after content change. Per Spike-5
-                    // decompile: UIScrollWindow uses a lerp anchor convention
-                    // where 0f = bottom and 1f = top. ResetScroll() calls
-                    // SetScrollValue(1f) internally + activates the scroll
-                    // system for mouse-wheel input.
-                    scrollWindow.ResetScroll();
-                }
-            }
-
-            float perfMs = (UnityEngine.Time.realtimeSinceStartup - perfT0) * 1000f;
-            UnityEngine.Debug.Log(
-                $"[ItemChecklist] PERF spawn={perfMs:F0}ms rows={_spawnedRows.Count}");
-        }
-
-        private void ClearRows()
-        {
-            foreach (var r in _spawnedRows)
-            {
-                if (r == null) continue;
-                // IB-pattern (BasicEntriesListRenderer.ClearList): release PugText pool
-                // resources before destroying the GameObject. Without this, PugText's
-                // internal shared pool leaks on every Destroy, which manifests as text
-                // disappearing on 2nd+ open and main menu PugTexts going blank after
-                // first window open.
-                foreach (var pugText in r.GetComponentsInChildren<PugText>(true))
-                    pugText.Clear();
-                Object.Destroy(r.gameObject);
-            }
-            _spawnedRows.Clear();
+            if (root == null || !root.activeSelf) return;
+            PopulateContent();   // SetCount + UpdateScrollHeight + ResetScroll + RefreshVisible
         }
     }
 }
