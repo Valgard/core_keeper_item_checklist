@@ -275,7 +275,7 @@ mask `scale.y = 6.5`, mask `localPos.y = -2.0`.
 The prefab has no wired scrollbar (`scrollBar: {fileID: 0}`), so
 `UpdateScrollbar` early-returns. This is pre-existing, **not** an Iter-3.8
 regression — mouse-wheel scrolling works. Wiring a visible scrollbar is
-deferred to Iter-7.
+deferred to Iter-9.
 
 ---
 

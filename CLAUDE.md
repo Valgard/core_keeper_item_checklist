@@ -121,10 +121,10 @@ for the first/last rows to sit flush. F1 already opens the window (wired
 since Iter-1 via the CoreLib `ControlMappingModule` keybind); it does
 **not** close it (`UserInterfaceModule.OpenModUI` is not toggle-capable) —
 ESC closes. Pending: Iter-4 (real F1 *toggle* — open-and-close on one key);
-**Iter-4.5 — functional scrollbar (planned before Iter-5)**: wire a working,
+**Iter-5 — functional scrollbar**: wire a working,
 draggable scrollbar using the existing `Art/Bridge/` placeholder sprites
 (e.g. `mask_sprite.png`, a 1×1 white sprite tinted, as track + handle); full
-visual polish (real sprites) folds into Iter-7. De-risked contract (ILSpy):
+visual polish (real sprites) folds into Iter-9. De-risked contract (ILSpy):
 CK's `ScrollBar : UIelement` needs `scrollWindow` + `root` (GameObject) +
 `background` (SpriteRenderer) + `handle` (a `ScrollBarHandle : ButtonUIElement`
 with `handleSpriteRenderer`, `handleCollider` BoxCollider, `handleSpritesToResize`);
@@ -132,7 +132,7 @@ with `handleSpriteRenderer`, `handleCollider` BoxCollider, `handleSpritesToResiz
 `SetScrollValue`, handle size ∝ `VisibleRatio` (min 0.625). Wire
 `UIScrollWindow.scrollBar` to it (prefab fields `scrollBar`/`arrowUp`/`arrowDown`
 are currently `fileID: 0`; scroll arrows stay optional/unused).
-**Iter-4.6 — item rarity colouring (planned after the scrollbar)**: surface
+**Iter-6 — item rarity colouring**: surface
 each item's CK rarity by colour for **all** items (not just food), the way CK
 itself does. De-risked (ILSpy): `enum Rarity` (Pug.Base.dll) =
 `Poor=-1, Common, Uncommon, Rare, Epic, Legendary`; each item carries it in
@@ -143,10 +143,10 @@ itself does. De-risked (ILSpy): `enum Rarity` (Pug.Base.dll) =
 Iter-3.7 cooked-food tiers (`CookedFoodCD.rareVersion`/`epicVersion`) — do not
 conflate the food Base/Rare/Epic ladder with general `ObjectInfo.rarity`.
 Likely surfaces as a tinted name or a rarity border on each row; pairs well
-with a rarity sort-order in Iter-5. Iter-5
-(Listen-Sortierung); Iter-6 (Filter+Suche — a discovered-only filter was
+with a rarity sort-order in Iter-7. Iter-7
+(Listen-Sortierung); Iter-8 (Filter+Suche — a discovered-only filter was
 prototyped as a throwaway test scaffold in Iter-3.8 and removed; it can
-seed Iter-6); Iter-7 (Window-/Style-Polish inkl. Footer-Move + perfectly
+seed Iter-8); Iter-9 (Window-/Style-Polish inkl. Footer-Move + perfectly
 flush window needs a panel/mask resize to an integer row multiple + scrollbar
 *visual* polish/real sprites). See `git log` for canonical per-iter merge
 points and `docs/superpowers/specs/` for design docs.

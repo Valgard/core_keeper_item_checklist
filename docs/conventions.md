@@ -100,7 +100,7 @@ reachable in seconds while exercising the identical flush-geometry path. The
 scaffold lived only in uncommitted working-tree edits; the reviewed row logic
 was already committed, so a `git restore` of the modified `.cs` removed the
 scaffold cleanly without touching reviewed code. (The same remap can later
-seed the real Iter-6 discovered-only filter.)
+seed the real Iter-8 discovered-only filter.)
 
 Rule: scaffolds never get committed onto a story commit. Add them to the
 working tree, use them, then `git restore` before the iter's ff-merge.
@@ -137,8 +137,8 @@ unity/ItemChecklist/
     ItemChecklistWindow.cs        IModUI implementation (UIelement subclass)
     ItemRow.cs                    row MonoBehaviour (Bind API)
     ItemChecklistContent.cs       IScrollable implementation (viewport recycler)
-    FilterAndSearchModel.cs       filter/search state (deferred Iter-6)
-    UnityInputFieldAdapter.cs     input-field adapter for search (deferred Iter-6)
+    FilterAndSearchModel.cs       filter/search state (deferred Iter-8)
+    UnityInputFieldAdapter.cs     input-field adapter for search (deferred Iter-8)
   Prefabs/
     ItemChecklistWindow.prefab    window hierarchy
     ItemRow.prefab                row template (recycled by scroll list)

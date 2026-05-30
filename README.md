@@ -42,7 +42,7 @@ not ship in the published mod.
 
 - **No visible scrollbar yet.** The window prefab has no wired scrollbar
   (`scrollBar: {fileID: 0}`), so the scroll track does not render. Scrolling
-  works via the mouse wheel; a visible scrollbar is deferred to Iter-7.
+  works via the mouse wheel; a visible scrollbar is deferred to Iter-9.
 
 ## Documentation
 
