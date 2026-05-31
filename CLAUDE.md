@@ -57,6 +57,7 @@ DLLs are in CK's installation: `…/Core Keeper/CoreKeeper_Data/Managed/`.
 | `I2.Loc.LocalizationManager.OnLocalizeEvent` | `I2.Loc.dll` | Public static `event Action` (no params). Fires after language change via `DoLocalizeAll()` / `Coroutine_LocalizeAll()`. Sandbox-safe (public static event on trusted I2.dll). Fallback if banned: poll `LocalizationManager.CurrentLanguage` in a `ManagedUpdate` postfix (ItemBrowser-proven pattern — compare against cached value, trigger on change). |
 | `PlayerController.GetObjectName` | `Pug.Other.dll` | `GetObjectName(buf, localize: bool)` — second param is `bool localize`. Passing `false` yields the raw I2 term path (e.g. `"Items/LargeWaterCan"`), not the display name. IB pattern (ObjectUtility.cs:97–108): `localizedName = GetObjectName(buf, true).text`; `unlocalizedName = GetObjectName(buf, false).text`; if `fields.dontLocalize` → use unlocalizedName as fallback. |
 | `UIScrollWindow.SetScrollValue` | `Pug.Other.dll` | `SetScrollValue(float normalizedScrollValue)`: `1f` → top of list (lerp → minScrollPos=0, content.localY=0); `0f` → bottom (content shifted up by full height). Use `scrollWindow.ResetScroll()` for "go to top" — equivalent to `SetScrollValue(1f)`. Post-content-spawn sequence (IB EntriesList.SetEntries pattern): set scrollable via `API.Reflection.SetValue`, invoke `UpdateScrollHeight` via `API.Reflection.Invoke`, then call `SetScrollValue(1f)`. Full internals in `docs/architecture.md § UIScrollWindow Reference`. |
+| `ScrollBar` / `ScrollBarHandle` | `Pug.Other.dll` | Native scrollbar (Iter-5, prefab-wired). `ScrollBar` fields: `scrollWindow`, `root` (a **child** GO it toggles — not the component's own GO, else it can self-deactivate before `ScrollHeight` is set), `background` (track `SpriteRenderer`), `handle` (`ScrollBarHandle`). `ScrollBarHandle : ButtonUIElement` fields: `handleSpriteRenderer`, `handleCollider` (**3D `BoxCollider`** `!u!65`, not `!u!61` — CK `UIMouse` raycasts in 3D), `handleSpritesToResize`. **No mod C#:** `UIScrollWindow.LateUpdate → UpdateScrollbar → ScrollBar.UpdateScrollBarPosition` does sizing + position + mouse-wheel sync once `UIScrollWindow.scrollBar` is wired (verified against Item Browser, which ships no scrollbar C#). Handle drag = `ScrollBarHandle.onLeftClick` UnityEvent → `ScrollBar.OnHandleLeftClick` (`m_TargetAssemblyTypeName: ScrollBar, Pug.Other`, `m_Mode: 1`). Handle size ∝ `VisibleRatio`, min 0.625. **`ButtonUIElement.LateUpdate` toggles GO activity** of `spritesShownUnpressed` (active when `!leftClickIsHeldDown`) and `spritesShownPressed` (active when held) — a GO in **both** lists ends up visible only while held; with one handle sprite keep both lists empty and let `handleSpriteRenderer` be the always-on handle, with the selected-border as `optionalSelectedMarker`. Renderers need `maskInteraction: None`. See `docs/architecture.md § Scrollbar (Iter-5)` and the `project-corekeeper-script-fileid-derivation` memory. |
 | `CoreLib UserInterfaceModule` | `CoreLib.UserInterface.dll` | Version 4.0.4 (stable Feb–May 2026). `LoadSubmodule` in `EarlyInit`; `RegisterModUI(GameObject)` in `ModObjectLoaded`. UI class must extend `UIelement` AND implement `IModUI`. Mount: auto into `UIManager.chestInventoryUI.transform.parent`. Open: `UserInterfaceModule.OpenModUI("ItemChecklist:Window")`. Auto-hide on vanilla `HideAllInventoryAndCraftingUI`; zero patches needed for cursor/WASD-block/Escape. `Awake()` must call `HideUI()`. **Iter-4 F1 toggle + menu-exclusion:** `OpenModUI` is not toggle-capable, so the mod toggles itself — close via `Manager.ui.HideAllInventoryAndCraftingUI(forceClose: false)` (mirrors `PlayerController.CloseAnyOpenInventory`; CoreLib's postfix clears `currentInterface`), open-state read from `Instance.Root.activeSelf` not `currentInterface`. Guard with `Manager.ui.isPlayerInventoryShowing` (per-UI `isShowing` getters on `UIManager` in `Pug.Other.dll` are **unpatched** — CoreLib only patches the aggregate `isAnyInventoryShowing`). `InventoryOpenAutoHidePatch` postfixes `UIManager.OnPlayerInventoryOpen` — the single funnel every Vanilla menu open routes through — with a **bare** `HideUI()` to enforce no-overlap; coherent only while `ShowWithPlayerInventory == false`. Background: `Manager.ui.GetCraftingUITheme(UIManager.CraftingUIThemeType.Wood).background` (enum param, not string → 9-slice wood frame, zero custom art). `BoxCollider2D` required on root. Production refs: limoka/BookMod (~145 IMod LoC + ~162 UI LoC), limoka/DummyMod (~87+84). |
 
 Iter-3.7's α-algorithm derives directly from `InventoryUtility.cs:~1626`:
@@ -121,18 +122,27 @@ for the first/last rows to sit flush. **Iter-4 (DONE):** F1 is now a real toggle
 the checklist is mutually exclusive with CK's inventory/crafting UI — opening
 a Vanilla menu auto-hides it, and F1 won't open it over an open menu. See the
 `CoreLib UserInterfaceModule` row above and `docs/architecture.md § UI
-Architecture` for the mechanism. Pending:
-**Iter-5 — functional scrollbar**: wire a working,
-draggable scrollbar using the existing `Art/Bridge/` placeholder sprites
-(e.g. `mask_sprite.png`, a 1×1 white sprite tinted, as track + handle); full
-visual polish (real sprites) folds into Iter-9. De-risked contract (ILSpy):
-CK's `ScrollBar : UIelement` needs `scrollWindow` + `root` (GameObject) +
-`background` (SpriteRenderer) + `handle` (a `ScrollBarHandle : ButtonUIElement`
-with `handleSpriteRenderer`, `handleCollider` BoxCollider, `handleSpritesToResize`);
-`ScrollBar.Update()` self-shows on `ScrollHeight > 0`, drag maps mouse-Y →
-`SetScrollValue`, handle size ∝ `VisibleRatio` (min 0.625). Wire
-`UIScrollWindow.scrollBar` to it (prefab fields `scrollBar`/`arrowUp`/`arrowDown`
-are currently `fileID: 0`; scroll arrows stay optional/unused).
+Architecture` for the mechanism. **Iter-5 (DONE):** a working, draggable
+scrollbar is wired into the window prefab using CK's native `ScrollBar` +
+`ScrollBarHandle`, with the Item-Browser bridge scrollbar sprites (track +
+handle + selected-border, sub-sprites of the `ui_classic` atlas). **Pure
+prefab change — zero C#:** once `UIScrollWindow.scrollBar` references the
+`ScrollBar`, CK's `UIScrollWindow.LateUpdate → UpdateScrollbar →
+ScrollBar.UpdateScrollBarPosition` drives handle sizing, position, and
+mouse-wheel sync itself (verified against Item Browser, which has no scrollbar
+C#). Scroll arrows stay unwired (`fileID: 0`); track-position fine-tuning and
+real sprites fold into Iter-9. Two non-obvious facts proven during the build:
+the scrollbar SpriteRenderers must use **`maskInteraction: None`** to stay
+unclipped by the row SpriteMask (orders 46/47 sit inside the 40..55 mask
+range), and `ButtonUIElement.LateUpdate` toggles **GameObject activity** of
+`spritesShownUnpressed`/`spritesShownPressed` each frame — a GO must never be
+in both lists, and with a single handle sprite both lists stay **empty** so
+`handleSpriteRenderer` (rendered by `ScrollBar` itself) is the always-visible
+handle, with the selected-border wired only as `optionalSelectedMarker`
+(hover/selection highlight). Script-ref rule for hand-wired CK components:
+`m_Script.fileID` is a portable class-name MD4 hash, but the `guid` is this
+install's `Pug.Other.dll.meta` guid — see the
+`project-corekeeper-script-fileid-derivation` memory. Pending:
 **Iter-6 — item rarity colouring**: surface
 each item's CK rarity by colour for **all** items (not just food), the way CK
 itself does. De-risked (ILSpy): `enum Rarity` (Pug.Base.dll) =

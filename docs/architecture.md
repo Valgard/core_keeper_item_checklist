@@ -295,12 +295,50 @@ upward. This was settled by empirical 4-build calibration, not by a static
 reading of the prefab — the final values are `windowHeight = 6.5`,
 mask `scale.y = 6.5`, mask `localPos.y = -2.0`.
 
-### Scrollbar not wired
+### Scrollbar (Iter-5)
 
-The prefab has no wired scrollbar (`scrollBar: {fileID: 0}`), so
-`UpdateScrollbar` early-returns. This is pre-existing, **not** an Iter-3.8
-regression — mouse-wheel scrolling works. Wiring a visible scrollbar is
-deferred to Iter-9.
+The window prefab now wires CK's native `ScrollBar` + `ScrollBarHandle` into
+`UIScrollWindow.scrollBar`. This is a **pure prefab change — no mod C#**: once
+`scrollBar` is set, `UIScrollWindow.LateUpdate` calls `UpdateScrollbar()` every
+frame the scroll position or height changes, which calls
+`ScrollBar.UpdateScrollBarPosition(normalizedPosition)` — driving handle
+sizing, position, **and** mouse-wheel sync. (Verified against Item Browser,
+whose working scrollbar has zero scrollbar C#.) Mouse-wheel scrolling already
+worked before; the new wiring just makes the handle reflect it.
+
+**Prefab subtree** (under the window `root` GO): `ScrollBar` GO (holds the
+`ScrollBar` component; localPos `(4.9, -0.5, 0)`) → `ScrollBarRoot` child
+(= `ScrollBar.root`, the GO CK toggles) → `ScrollBarTrack` (track
+`SpriteRenderer` = `ScrollBar.background`, size `(0.25, 6.5)` = viewport
+height) + `ScrollBarHandle` (`ScrollBarHandle` + 3D `BoxCollider` =
+`ScrollBar.handle`) → `ScrollBarHandleSprite` (= `handleSpriteRenderer`) +
+`ScrollBarHandleSelected` (= `optionalSelectedMarker`). Sprites are the
+`ui_scrollbar_*` sub-sprites of the `ui_classic` atlas.
+
+**Three load-bearing facts (proven during Iter-5 builds):**
+
+1. **`maskInteraction: None` on every scrollbar `SpriteRenderer`.** They sit at
+   sorting orders 46/47/48 inside the SpriteMask custom range (40..55), so
+   without `maskInteraction = None` the row mask would clip them. `None`
+   exempts them entirely.
+2. **`handleCollider` is a 3D `BoxCollider`** (`!u!65`), not `BoxCollider2D` —
+   CK's `UIMouse` does a 3D `Physics.Raycast`. Size `(0.5, 1.25, 4)`; the `y`
+   is overwritten each frame by `ScrollBar.UpdateHandleSize`, the `z: 4` is
+   raycast depth.
+3. **`ButtonUIElement.LateUpdate` toggles GameObject *activity*** of
+   `spritesShownUnpressed` (active when `!leftClickIsHeldDown`) and
+   `spritesShownPressed` (active when held). The same GO must never be in both
+   lists (the pressed loop runs last and wins, so it would only show while
+   held → handle vanishes at idle). With a single handle sprite, both lists are
+   left **empty**: `handleSpriteRenderer` is rendered independently by
+   `ScrollBar` and stays always-visible, while the selected-border shows on
+   hover/selection via `optionalSelectedMarker` (toggled by
+   `OnSelected`/`OnDeselected`).
+
+For hand-wiring the CK component `m_Script` refs (portable fileID, install-local
+guid), see the `project-corekeeper-script-fileid-derivation` memory. Scroll
+arrows stay unwired (`arrowUp`/`arrowDown` = `{fileID: 0}`); track-position
+fine-tuning + real sprites are deferred to Iter-9.
 
 ---
 

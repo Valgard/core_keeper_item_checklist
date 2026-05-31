@@ -25,6 +25,11 @@ describe what shipped per release, not every commit.
   window-reopen.
 - **Performance instrumentation** via `[ItemChecklist] PERF` log entries
   in `Catalog.Bake()` and `Window.SpawnRows()`.
+- **Functional scrollbar.** A draggable scrollbar is now wired into the
+  checklist window, using Core Keeper's native scrollbar widget with
+  placeholder sprites. The handle is draggable, sized proportionally to the
+  list, and follows mouse-wheel scrolling. (Visual polish — real sprites,
+  exact positioning — is planned for a later iteration.)
 
 ### Changed
 
