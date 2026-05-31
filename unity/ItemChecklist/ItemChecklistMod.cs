@@ -125,36 +125,47 @@ namespace ItemChecklist
                 Debug.Log($"[ItemChecklist] Snapshot applied: {ids.Length} ids for guid {activeGuid}");
             }
 
-            // Hotkey poll — dual-path while we're verifying which one
-            // actually fires in-game. Rewired is the production target
-            // (rebindable via game settings); raw Input is the diagnostic
-            // fallback. Whichever fires first wins.
+            // Hotkey poll. Rewired is the production target (rebindable via
+            // game settings); raw Input is the diagnostic fallback.
             bool rewiredFired = rewiredPlayer != null && rewiredPlayer.GetButtonDown(ToggleActionName);
             bool rawFired = Input.GetKeyDown(KeyCode.F1);
             if (rewiredFired || rawFired)
             {
-                // Game-state guard — pattern from Item Browser
-                // (ItemBrowserUI.cs:201). Block the hotkey when another
-                // menu (Main, Inventory, Pause, Char-Select…) is active,
-                // when another text input has focus, or when the chat
-                // window is open. Skip the guard when our own window is
-                // already visible so the user can always close it.
-                if (!Manager.menu.IsAnyMenuActive()
-                    && !Manager.input.textInputIsActive
-                    && !ReferenceEquals(Manager.input.activeInputField, Manager.ui.chatWindow))
+                // Open-state is read from ACTUAL visibility (Root.activeSelf is
+                // the canonical open/closed signal), not CoreLib's
+                // currentInterface — which InventoryOpenAutoHidePatch can leave
+                // transiently stale (dangling) after auto-hiding the window.
+                var window = ItemChecklistWindow.Instance;
+                bool checklistOpen = window != null && window.Root.activeSelf;
+
+                if (checklistOpen)
                 {
-                    Debug.Log($"[ItemChecklist] Hotkey: rewired={rewiredFired} raw={rawFired} — opening UI");
-                    UserInterfaceModule.OpenModUI("ItemChecklist:Window");
+                    // Close via the exact E/ESC path: CoreLib's postfix on
+                    // HideAllInventoryAndCraftingUI hides our window AND clears
+                    // UserInterfaceModule.currentInterface. forceClose:false
+                    // mirrors PlayerController.CloseAnyOpenInventory(). A bare
+                    // HideUI() here would leave currentInterface dangling with
+                    // no Vanilla menu to cover it, freezing the player in menu
+                    // state (isAnyInventoryShowing stuck true).
+                    Debug.Log("[ItemChecklist] Hotkey — closing UI");
+                    Manager.ui.HideAllInventoryAndCraftingUI(forceClose: false);
                 }
-                else
+                // Guard: a Vanilla menu (pause/title), the inventory/crafting
+                // UI, a focused text field, or chat is active — don't open over
+                // it. isPlayerInventoryShowing closes the gap: IsAnyMenuActive()
+                // covers only the menu system, never the inventory/crafting UI.
+                else if (Manager.menu.IsAnyMenuActive()
+                    || Manager.ui.isPlayerInventoryShowing
+                    || Manager.input.textInputIsActive
+                    || ReferenceEquals(Manager.input.activeInputField, Manager.ui.chatWindow))
                 {
                     Debug.Log("[ItemChecklist] Hotkey ignored (other menu/input active)");
                 }
-                // Disconnected per docs/superpowers/specs/2026-05-25-itemchecklist-ui-pivot-iter1-design.md.
-                // Old UiController-based toggle path is kept as Iter-2 reference but is no longer called.
-                // The new window is registered via CoreLib's UserInterfaceModule and instantiated by
-                // CoreLib at UIManager.Init time.
-                // Ui.Toggle();
+                else
+                {
+                    Debug.Log("[ItemChecklist] Hotkey — opening UI");
+                    UserInterfaceModule.OpenModUI("ItemChecklist:Window");
+                }
             }
         }
     }
