@@ -10,10 +10,12 @@ namespace ItemChecklist.UI
         public PugText label;
         public PugText placeholder;
         public SpriteRenderer checkmark;
+        public SpriteRenderer rarityBorder;   // Iter-6: rarity frame, shown for Uncommon+
 
         public const float RowHeight = 2.5f; // world units (~40px at 16 PPU)
 
-        public void Bind(int objectId, Sprite iconSprite, string name, bool isDiscovered)
+        public void Bind(int objectId, Sprite iconSprite, string name, bool isDiscovered,
+            Color rarityColor, Rarity rarity)
         {
             if (isDiscovered)
             {
@@ -28,6 +30,19 @@ namespace ItemChecklist.UI
                 if (label != null) label.Render("???");
                 if (placeholder != null) placeholder.gameObject.SetActive(true);
                 if (checkmark != null) checkmark.enabled = false;
+            }
+
+            // Iter-6 rarity colouring. Set the colour AFTER Render(): SetTempColor
+            // writes the glyph SpriteRenderers that Render() rebuilds, so a colour
+            // set before Render() would be discarded. keepColorOnStart:true makes the
+            // tint survive PugText's renderOnStart re-render (first open after a fresh
+            // row instantiate), which would otherwise reset glyphs to style.color and
+            // leave the tint blank until the next RefreshVisible.
+            if (label != null) label.SetTempColor(rarityColor, keepColorOnStart: true);
+            if (rarityBorder != null)
+            {
+                rarityBorder.color = rarityColor;
+                rarityBorder.enabled = rarity >= Rarity.Uncommon;   // Poor + Common: no border
             }
         }
     }
