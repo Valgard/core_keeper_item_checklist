@@ -36,6 +36,13 @@ namespace ItemChecklist.UI
         private int _count;            // reported entry count (catalog.Count)
         private int _lastFirstIndex = -1;
 
+        // Iter-6: the label's prefab default colour, used for Common/Poor names
+        // (GetSlotBorderRarityColor returns this for them). Captured once from
+        // the first pooled row's PugText (whose getter returns style.color before
+        // any tint), so a future prefab style change is picked up automatically.
+        private Color _defaultLabelColor = Color.white;
+        private bool _defaultLabelColorCaptured;
+
         public int PoolSize => _pool.Count;
 
         private void Awake()
@@ -67,6 +74,12 @@ namespace ItemChecklist.UI
             {
                 var go = Object.Instantiate(_rowPrefab, transform);
                 _pool.Add(go.GetComponent<ItemRow>());
+            }
+            if (!_defaultLabelColorCaptured && _pool.Count > 0
+                && _pool[0] != null && _pool[0].label != null)
+            {
+                _defaultLabelColor = _pool[0].label.color;   // PugText.color getter → style.color
+                _defaultLabelColorCaptured = true;
             }
         }
 
@@ -131,8 +144,14 @@ namespace ItemChecklist.UI
                 if (!row.gameObject.activeSelf) row.gameObject.SetActive(true);
                 row.transform.localPosition = new Vector3(0f, -(idx * RowHeight), 0f);
                 var entry = catalog.GetByIndex(idx);
+                // CK-authoritative rarity colour. useDefaultColorForCommon: true →
+                // Common/Poor resolve to the label's normal colour (no visible tint),
+                // Uncommon+ get slotBorderRarityColors[(int)(rarity+1)].
+                Color rarityColor = Manager.ui.GetSlotBorderRarityColor(
+                    entry.Rarity, useDefaultColorForCommon: true, defaultColor: _defaultLabelColor);
                 row.Bind(entry.ObjectId, entry.Icon, entry.DisplayName,
-                    state.IsDiscovered(entry.ObjectId, entry.Variation));
+                    state.IsDiscovered(entry.ObjectId, entry.Variation),
+                    rarityColor, entry.Rarity);
             }
         }
 
