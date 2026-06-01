@@ -130,20 +130,22 @@ namespace ItemChecklist.UI
         {
             _lastFirstIndex = first;
             var catalog = ItemChecklistMod.Catalog;
+            var model = ItemChecklistMod.ListView;
             var state = DiscoveredState.Instance;
             for (int k = 0; k < _pool.Count; k++)
             {
                 var row = _pool[k];
                 if (row == null) continue;
-                int idx = first + k;
-                if (catalog == null || state == null || idx >= _count)
+                int displayIdx = first + k;
+                if (catalog == null || model == null || state == null || displayIdx >= _count)
                 {
                     if (row.gameObject.activeSelf) row.gameObject.SetActive(false);
                     continue;
                 }
                 if (!row.gameObject.activeSelf) row.gameObject.SetActive(true);
-                row.transform.localPosition = new Vector3(0f, -(idx * RowHeight), 0f);
-                var entry = catalog.GetByIndex(idx);
+                row.transform.localPosition = new Vector3(0f, -(displayIdx * RowHeight), 0f);
+                int catalogIdx = model.Order[displayIdx];
+                var entry = catalog.GetByIndex(catalogIdx);
                 // CK-authoritative rarity colour. useDefaultColorForCommon: true →
                 // Common/Poor resolve to the label's normal colour (no visible tint),
                 // Uncommon+ get slotBorderRarityColors[(int)(rarity+1)].

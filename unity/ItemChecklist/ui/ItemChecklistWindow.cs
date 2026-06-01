@@ -73,7 +73,8 @@ namespace ItemChecklist.UI
 
             content.Init(rowPrefab);
             content.EnsurePool();
-            content.SetCount(catalog.Count);
+            var model = ItemChecklistMod.ListView;
+            content.SetCount(model != null ? model.Count : catalog.Count);
 
             // Wire IScrollable + refresh scroll range, then snap to top. Uses
             // API.Reflection (sandbox-safe), NOT System.Reflection on MemberInfo.Name.
@@ -144,6 +145,28 @@ namespace ItemChecklist.UI
         {
             if (root == null || !root.activeSelf) return;
             PopulateContent();   // SetCount + UpdateScrollHeight + ResetScroll + RefreshVisible
+        }
+
+        /// <summary>
+        /// Called when ItemListViewModel.OnResultsChanged fires (sort/filter change).
+        /// Updates the row count, refreshes the scroll range, resets to top, and
+        /// force-rebinds the visible rows. No-op when the window is not active.
+        /// </summary>
+        // ReSharper disable once UnusedMember.Local
+        private void OnViewResultsChanged()
+        {
+            if (root == null || !root.activeSelf) return;
+            var content = Content;
+            if (content == null) return;
+            var model = ItemChecklistMod.ListView;
+            content.SetCount(model != null ? model.Count : 0);
+            if (scrollWindow != null)
+            {
+                API.Reflection.SetValue(MiScrollable, scrollWindow, content);
+                API.Reflection.Invoke(MiUpdateScrollHeight, scrollWindow);
+                scrollWindow.ResetScroll();
+            }
+            content.RefreshVisible();
         }
     }
 }
