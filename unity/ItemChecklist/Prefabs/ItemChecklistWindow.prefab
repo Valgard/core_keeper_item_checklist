@@ -1766,7 +1766,7 @@ Transform:
   m_GameObject: {fileID: 1000000000000000054}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1.1, y: 0, z: 0}
+  m_LocalPosition: {x: 2.0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -2115,7 +2115,7 @@ Transform:
   m_GameObject: {fileID: 1000000000000000057}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0.4, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -2207,7 +2207,7 @@ SpriteRenderer:
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 1
-  m_Size: {x: 3.2, y: 0.7}
+  m_Size: {x: 4.0, y: 0.7}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
@@ -2232,7 +2232,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 3.2, y: 0.7, z: 4}
+  m_Size: {x: 4.0, y: 0.7, z: 4}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &1140000000000000058
 MonoBehaviour:
@@ -2327,7 +2327,7 @@ Transform:
   m_GameObject: {fileID: 1000000000000000059}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1.35, y: 0, z: -0.1}
+  m_LocalPosition: {x: -1.75, y: 0, z: -0.1}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
