@@ -15,6 +15,7 @@ namespace ItemChecklist.UI
         public GameObject rowPrefab;      // assigned to ItemRow.prefab in Editor
         public UIScrollWindow scrollWindow;
         public AscDescToggle ascDescToggle;
+        public DropdownWidget sortDropdown;
 
         private ItemChecklistContent _content;
 
@@ -27,6 +28,8 @@ namespace ItemChecklist.UI
                 return _content;
             }
         }
+
+        private static readonly string[] SortLabels = { "Name", "Rarity", "Found", "Category" };
 
         private static readonly MemberInfo MiScrollable = typeof(UIScrollWindow).GetMembersChecked().FirstOrDefault(x => x.GetNameChecked() == "_scrollable");
         private static readonly MemberInfo MiUpdateScrollHeight = typeof(UIScrollWindow).GetMembersChecked().FirstOrDefault(x => x.GetNameChecked() == "UpdateScrollHeight");
@@ -67,6 +70,8 @@ namespace ItemChecklist.UI
             model.OnResultsChanged += OnViewResultsChanged;
             if (ascDescToggle != null)
                 ascDescToggle.Configure(model.Ascending, asc => { model.Ascending = asc; });
+            if (sortDropdown != null)
+                sortDropdown.Configure(SortLabels, (int)model.Mode, i => { model.Mode = (SortMode)i; });
         }
 
         public void HideUI()

@@ -5,23 +5,23 @@ using UnityEngine;
 namespace ItemChecklist.UI
 {
     /// <summary>
-    /// Reusable dropdown. Configure with option labels + a selected index + an
-    /// onSelected callback. Iter-7 instantiates it for the sort mode; Iter-8 for
-    /// the discovery filter — no widget changes needed. Click-outside-to-close is
-    /// added in a later task (the popup currently closes only via selecting a row
-    /// or re-clicking the toggle).
+    /// Reusable dropdown. Closed: the header shows the selected option. Open: a
+    /// flush list of the NON-selected options sits directly under the header.
+    /// Configure with labels + selected index + onSelected callback. Iter-7 uses
+    /// it for the sort mode; Iter-8 reuses it for the discovery filter.
     /// </summary>
     public sealed class DropdownWidget : UIelement
     {
-        // Editor-wired serialized fields (authored into the prefab in a later task).
-        public PugText selectedLabel;          // shows the current option text
+        // Editor-wired serialized fields.
+        public PugText selectedLabel;          // header: shows the current option text
         public DropdownToggleButton toggle;    // open/close button (carries the caret)
         public SpriteRenderer caret;           // ui_group_expand/collapse glyph
-        public GameObject popupPanel;          // toggled container holding the rows
+        public GameObject popupPanel;          // toggled container holding the option rows
         public Transform rowContainer;         // parent for cloned option rows
         public GameObject rowTemplate;         // one option-row prefab (inactive)
         public Sprite caretClosed;             // ui_group_expand (collapsed)
         public Sprite caretOpen;               // ui_group_collapse (expanded)
+        public float rowSpacing = 0.7f;        // compact option spacing (NOT the big list RowHeight)
 
         private readonly List<DropdownOptionButton> _rows = new List<DropdownOptionButton>();
         private readonly List<PugText> _rowLabels = new List<PugText>();
@@ -36,20 +36,20 @@ namespace ItemChecklist.UI
             _onSelected = onSelected;
             _labels = new string[labels.Count];
             for (int i = 0; i < labels.Count; i++) _labels[i] = labels[i];
-            BuildRows();
-            SetSelected(selectedIndex, fire: false);
+            EnsurePool(Mathf.Max(0, _labels.Length - 1));
+            _selected = Mathf.Clamp(selectedIndex, 0, Mathf.Max(0, _labels.Length - 1));
+            RenderHeader();
+            RebuildList();
             SetOpen(false);
             if (toggle != null) toggle.owner = this;
         }
 
-        private void BuildRows()
+        private void EnsurePool(int n)
         {
             if (rowTemplate == null || rowContainer == null) return;
-            // Clone-or-reuse: grow the row pool to _labels.Length (mirrors EnsurePool).
-            for (int i = _rows.Count; i < _labels.Length; i++)
+            for (int i = _rows.Count; i < n; i++)
             {
                 var go = UnityEngine.Object.Instantiate(rowTemplate, rowContainer);
-                go.transform.localPosition = new Vector3(0f, -(i * ItemRow.RowHeight), 0f);
                 var btn = go.GetComponent<DropdownOptionButton>();
                 if (btn == null)
                 {
@@ -58,17 +58,45 @@ namespace ItemChecklist.UI
                     continue;
                 }
                 btn.owner = this;
-                btn.index = i;
                 _rows.Add(btn);
                 _rowLabels.Add(FindLabel(go));
                 _rowSelectedMarks.Add(FindSelectedMark(go));
             }
-            for (int i = 0; i < _rows.Count; i++)
+        }
+
+        private void RenderHeader()
+        {
+            if (selectedLabel != null && _selected >= 0 && _selected < _labels.Length)
+                selectedLabel.Render(_labels[_selected]);
+        }
+
+        /// <summary>Lay out the NON-selected options flush under the header.</summary>
+        private void RebuildList()
+        {
+            int pos = 0;
+            for (int opt = 0; opt < _labels.Length; opt++)
             {
-                bool used = i < _labels.Length;
-                _rows[i].gameObject.SetActive(used);
-                if (used && _rowLabels[i] != null) _rowLabels[i].Render(_labels[i]);
+                if (opt == _selected) continue;          // selected lives in the header
+                if (pos >= _rows.Count) break;
+                var btn = _rows[pos];
+                btn.index = opt;                          // clicking selects this option
+                if (!btn.gameObject.activeSelf) btn.gameObject.SetActive(true);
+                btn.transform.localPosition = new Vector3(0f, -((pos + 1) * rowSpacing), 0f);
+                if (_rowLabels[pos] != null) _rowLabels[pos].Render(_labels[opt]);
+                if (_rowSelectedMarks[pos] != null) _rowSelectedMarks[pos].enabled = false;
+                pos++;
             }
+            for (int i = pos; i < _rows.Count; i++)
+                if (_rows[i].gameObject.activeSelf) _rows[i].gameObject.SetActive(false);
+        }
+
+        public void SelectOption(int optionIndex)
+        {
+            _selected = optionIndex;
+            RenderHeader();
+            RebuildList();
+            SetOpen(false);
+            _onSelected?.Invoke(_selected);
         }
 
         public void TogglePopup() => SetOpen(!_open);
@@ -80,24 +108,7 @@ namespace ItemChecklist.UI
             if (caret != null) caret.sprite = open ? caretOpen : caretClosed;
         }
 
-        public void SelectOption(int index)
-        {
-            SetSelected(index, fire: true);
-            SetOpen(false);
-        }
-
-        private void SetSelected(int index, bool fire)
-        {
-            _selected = index;
-            if (selectedLabel != null && index >= 0 && index < _labels.Length)
-                selectedLabel.Render(_labels[index]);
-            for (int i = 0; i < _rowSelectedMarks.Count; i++)
-                if (_rowSelectedMarks[i] != null)
-                    _rowSelectedMarks[i].enabled = (i == index);
-            if (fire) _onSelected?.Invoke(index);
-        }
-
-        // Template child lookup — child names must match the prefab authoring task.
+        // Template child lookup — child names must match the prefab authoring.
         private static PugText FindLabel(GameObject row) =>
             row.transform.Find("Label")?.GetComponent<PugText>();
         private static SpriteRenderer FindSelectedMark(GameObject row) =>
