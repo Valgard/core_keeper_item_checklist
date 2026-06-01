@@ -442,3 +442,46 @@ size.
 **`ObjectIDExtensions.IsCookedFood`** range: `objectId ∈ [9500, 9599]`
 (max 100 family-item slots). Loop 1 uses this to skip standard-item
 enumeration of cooked-food ObjectIDs — they are emitted by Loop 2 instead.
+
+---
+
+## Rarity Colouring (Iter-6)
+
+Each row surfaces its CK rarity on two axes: a tinted item name (all
+rarities) and a rarity border around the icon (Uncommon and above). The
+rarity is a **distinct axis** from the Iter-3.7 cooked-food Base/Rare/Epic
+tiers — each cooked-food tier carries its own `ObjectInfo.rarity`.
+
+### Data flow
+
+1. **Bake** — `ItemCatalog.Entry` carries a `Rarity Rarity` field, resolved
+   from `PugDatabase.GetObjectInfo(objectId, variation).rarity` via a
+   `rarityCache` that mirrors the existing `iconCache` (populated in both
+   bake loops, read at the single `new Entry(...)` site). UI-independent: the
+   bake never touches `Manager.ui`.
+2. **Rebind** — `ItemChecklistContent.Rebind` resolves the colour per visible
+   row: `Manager.ui.GetSlotBorderRarityColor(entry.Rarity,
+   useDefaultColorForCommon: true, defaultColor: _defaultLabelColor)`. With
+   `true`, Common/Poor return `_defaultLabelColor` (the label's prefab default,
+   captured once from the first pool row) → no visible tint; Uncommon+ return
+   `slotBorderRarityColors[(int)(rarity + 1)]`. The resolved `Color` and the
+   `Rarity` enum are passed to `ItemRow.Bind`.
+3. **Paint** — `ItemRow.Bind` sets `label.SetTempColor(colour,
+   keepColorOnStart: true)` (after `Render`; see `gotchas.md § PugText tint`)
+   and toggles `rarityBorder.enabled = rarity >= Rarity.Uncommon`, colouring it
+   with the same `Color`. `ItemRow` stays decoupled from `Manager.ui` — it
+   paints the colour it is handed.
+
+`enum Rarity` (`Pug.Base.dll`): `Poor = -1, Common, Uncommon, Rare, Epic,
+Legendary`; the colour-list index is `(int)(rarity + 1)`.
+
+### Border SpriteRenderer
+
+The `RarityBorder` child of the `ItemRow` prefab uses **`maskInteraction: 1`
+(VisibleInsideMask)** — it scrolls and clips *with* the rows (the opposite of
+the Iter-5 scrollbar's `None`). Sorting order 49 places the hollow frame above
+the icon (order 48). It defaults to `m_Enabled: 0` (hidden until `Bind` proves
+rarity ≥ Uncommon). The sprite is the placeholder `ui_rarity_border` (a white
+1-px hollow frame, tinted at runtime); the frame is intentionally thick (a 1-px
+ring on an 8×8 sprite uniformly stretched) — real 9-slice / pixel-art polish is
+deferred to Iter-9.

@@ -183,3 +183,34 @@ pugText.style.orderInLayer = 48;
 In prefab YAML, use `sortingLayer:` / `orderInLayer:` keys. Do not use
 `m_SortingLayer` / `m_SortingOrder` — those are `SpriteRenderer` YAML keys
 and are silently ignored on a `PugText` component.
+
+### PugText tint: set colour after Render(), and keepColorOnStart:true (Iter-6)
+
+`PugText.color`'s setter calls `SetTempColor`, which writes the **glyph
+SpriteRenderers** that `Render(text)` (re)builds. Two consequences for tinting
+a row label:
+
+1. **Set the colour after `Render()`**, not before — a colour applied before
+   `Render()` rebuilds the glyphs is discarded (there are no glyphs yet, or they
+   get overwritten).
+2. **Use `label.SetTempColor(c, keepColorOnStart: true)`, not `label.color =
+   c`.** A prefab `PugText` with `renderOnStart: 1` re-renders once on `Start`
+   (one frame after a freshly-instantiated row first activates), resetting the
+   glyphs to `style.color` and blanking the tint. With `keepColorOnStart: true`
+   the PugText re-applies `tmpColor` on that start-render (`if (_keepColorOnStart)
+   SetTempColor(tmpColor)` in the decompile). Symptom of getting this wrong: on
+   the **first** open after a world-load the tint appears only after several
+   seconds (once a discovery-driven `RefreshVisible` re-binds); subsequent opens
+   are fine because the rows have already started.
+
+### Bridge placeholder sprite may be fully transparent → renders nothing (Iter-6)
+
+`ui_rarity_border.png` shipped as an 8×8 PNG with **alpha 0 on every pixel** —
+a correct `Sprite` import (`textureType: 8`, `spriteMode: 1`) and present in the
+AssetBundle, but invisible. A SpriteRenderer pointed at it draws nothing
+regardless of size/order/tint. When a hand-authored sprite "doesn't show",
+check the actual pixel alpha (`sips` / PIL) before assuming a wiring/order bug.
+The visible placeholder is a white 1-px hollow frame (tinted at runtime by the
+rarity colour); `ui_slot_border.png` has the right hollow-frame shape but its
+`.meta` is `textureType: 0` (the sprite-meta trap) so it is not usable as a
+`Sprite` reference without re-importing.

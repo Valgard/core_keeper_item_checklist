@@ -59,6 +59,7 @@ DLLs are in CK's installation: `…/Core Keeper/CoreKeeper_Data/Managed/`.
 | `UIScrollWindow.SetScrollValue` | `Pug.Other.dll` | `SetScrollValue(float normalizedScrollValue)`: `1f` → top of list (lerp → minScrollPos=0, content.localY=0); `0f` → bottom (content shifted up by full height). Use `scrollWindow.ResetScroll()` for "go to top" — equivalent to `SetScrollValue(1f)`. Post-content-spawn sequence (IB EntriesList.SetEntries pattern): set scrollable via `API.Reflection.SetValue`, invoke `UpdateScrollHeight` via `API.Reflection.Invoke`, then call `SetScrollValue(1f)`. Full internals in `docs/architecture.md § UIScrollWindow Reference`. |
 | `ScrollBar` / `ScrollBarHandle` | `Pug.Other.dll` | Native scrollbar (Iter-5, prefab-wired). `ScrollBar` fields: `scrollWindow`, `root` (a **child** GO it toggles — not the component's own GO, else it can self-deactivate before `ScrollHeight` is set), `background` (track `SpriteRenderer`), `handle` (`ScrollBarHandle`). `ScrollBarHandle : ButtonUIElement` fields: `handleSpriteRenderer`, `handleCollider` (**3D `BoxCollider`** `!u!65`, not `!u!61` — CK `UIMouse` raycasts in 3D), `handleSpritesToResize`. **No mod C#:** `UIScrollWindow.LateUpdate → UpdateScrollbar → ScrollBar.UpdateScrollBarPosition` does sizing + position + mouse-wheel sync once `UIScrollWindow.scrollBar` is wired (verified against Item Browser, which ships no scrollbar C#). Handle drag = `ScrollBarHandle.onLeftClick` UnityEvent → `ScrollBar.OnHandleLeftClick` (`m_TargetAssemblyTypeName: ScrollBar, Pug.Other`, `m_Mode: 1`). Handle size ∝ `VisibleRatio`, min 0.625. **`ButtonUIElement.LateUpdate` toggles GO activity** of `spritesShownUnpressed` (active when `!leftClickIsHeldDown`) and `spritesShownPressed` (active when held) — a GO in **both** lists ends up visible only while held; with one handle sprite keep both lists empty and let `handleSpriteRenderer` be the always-on handle, with the selected-border as `optionalSelectedMarker`. Renderers need `maskInteraction: None`. See `docs/architecture.md § Scrollbar (Iter-5)` and the `project-corekeeper-script-fileid-derivation` memory. |
 | `CoreLib UserInterfaceModule` | `CoreLib.UserInterface.dll` | Version 4.0.4 (stable Feb–May 2026). `LoadSubmodule` in `EarlyInit`; `RegisterModUI(GameObject)` in `ModObjectLoaded`. UI class must extend `UIelement` AND implement `IModUI`. Mount: auto into `UIManager.chestInventoryUI.transform.parent`. Open: `UserInterfaceModule.OpenModUI("ItemChecklist:Window")`. Auto-hide on vanilla `HideAllInventoryAndCraftingUI`; zero patches needed for cursor/WASD-block/Escape. `Awake()` must call `HideUI()`. **Iter-4 F1 toggle + menu-exclusion:** `OpenModUI` is not toggle-capable, so the mod toggles itself — close via `Manager.ui.HideAllInventoryAndCraftingUI(forceClose: false)` (mirrors `PlayerController.CloseAnyOpenInventory`; CoreLib's postfix clears `currentInterface`), open-state read from `Instance.Root.activeSelf` not `currentInterface`. Guard with `Manager.ui.isPlayerInventoryShowing` (per-UI `isShowing` getters on `UIManager` in `Pug.Other.dll` are **unpatched** — CoreLib only patches the aggregate `isAnyInventoryShowing`). `InventoryOpenAutoHidePatch` postfixes `UIManager.OnPlayerInventoryOpen` — the single funnel every Vanilla menu open routes through — with a **bare** `HideUI()` to enforce no-overlap; coherent only while `ShowWithPlayerInventory == false`. Background: `Manager.ui.GetCraftingUITheme(UIManager.CraftingUIThemeType.Wood).background` (enum param, not string → 9-slice wood frame, zero custom art). `BoxCollider2D` required on root. Production refs: limoka/BookMod (~145 IMod LoC + ~162 UI LoC), limoka/DummyMod (~87+84). |
+| `UIManager.GetSlotBorderRarityColor` / `ObjectInfo.rarity` / `enum Rarity` | `Pug.Other.dll` / `Pug.Base.dll` | Iter-6 rarity colouring. `enum Rarity { Poor=-1, Common, Uncommon, Rare, Epic, Legendary }`; `ObjectInfo.rarity` is a plain `public Rarity rarity` field. `Color GetSlotBorderRarityColor(Rarity rarity, bool useDefaultColorForCommon, Color defaultColor)` returns `defaultColor` when `useDefaultColorForCommon && (rarity == Common \|\| rarity == Poor)`, else `Manager.ui.slotBorderRarityColors[(int)(rarity + 1)]` (a `List<Color>`). `Manager.ui.*` is sandbox-safe (already used in this mod). `PugText.color` setter = `SetTempColor(value)` (paints the glyph SpriteRenderers `Render()` rebuilds → set after Render; pass `keepColorOnStart: true` to survive `renderOnStart`). See `docs/architecture.md § Rarity Colouring (Iter-6)` + `docs/gotchas.md § PugText tint`. |
 
 Iter-3.7's α-algorithm derives directly from `InventoryUtility.cs:~1626`:
 for any ingredient pair `(i1, i2)`, the resulting family is
@@ -142,19 +143,24 @@ handle, with the selected-border wired only as `optionalSelectedMarker`
 (hover/selection highlight). Script-ref rule for hand-wired CK components:
 `m_Script.fileID` is a portable class-name MD4 hash, but the `guid` is this
 install's `Pug.Other.dll.meta` guid — see the
-`project-corekeeper-script-fileid-derivation` memory. Pending:
-**Iter-6 — item rarity colouring**: surface
-each item's CK rarity by colour for **all** items (not just food), the way CK
-itself does. De-risked (ILSpy): `enum Rarity` (Pug.Base.dll) =
-`Poor=-1, Common, Uncommon, Rare, Epic, Legendary`; each item carries it in
-`ObjectInfo.rarity`; colours come from `Manager.ui.slotBorderRarityColors`
-(`List<Color>`, index `(int)(rarity+1)`) via
-`Manager.ui.GetSlotBorderRarityColor(rarity, …)`. A placeholder
-`Art/Bridge/ui_rarity_border.png` already exists. **Distinct axis** from the
-Iter-3.7 cooked-food tiers (`CookedFoodCD.rareVersion`/`epicVersion`) — do not
-conflate the food Base/Rare/Epic ladder with general `ObjectInfo.rarity`.
-Likely surfaces as a tinted name or a rarity border on each row; pairs well
-with a rarity sort-order in Iter-7. Iter-7
+`project-corekeeper-script-fileid-derivation` memory. **Iter-6 (DONE):**
+item rarity colouring — each row's CK rarity (`ObjectInfo.rarity`) shows as a
+name tint (all rarities; Common/Poor keep the default text colour, Uncommon+
+get their rarity colour) **and** a rarity border around the icon for Uncommon+
+(Common/Poor get no border, matching CK's `GetSlotBorderRarityColor`
+`useDefaultColorForCommon` grouping). Applies to undiscovered `???` rows too.
+`Rarity` baked into `ItemCatalog.Entry` (via a `rarityCache` mirroring
+`iconCache`); colour resolved at rebind in `ItemChecklistContent` via
+`Manager.ui.GetSlotBorderRarityColor(rarity, useDefaultColorForCommon: true,
+defaultColor)`; `ItemRow.Bind` paints it. **Distinct axis** from the Iter-3.7
+cooked-food tiers (`CookedFoodCD.rareVersion`/`epicVersion`). Two non-obvious
+facts proven in-game (see `docs/gotchas.md`): the label tint must use
+`SetTempColor(c, keepColorOnStart: true)` after `Render()` or it blanks on the
+first open (PugText `renderOnStart`), and the shipped `ui_rarity_border.png`
+placeholder was fully transparent (fixed to a white hollow frame; real
+9-slice/pixel-art border is **Iter-9** polish, as the current frame is thick).
+Full mechanism in `docs/architecture.md § Rarity Colouring (Iter-6)`. Pending:
+Iter-7
 (Listen-Sortierung); Iter-8 (Filter+Suche — a discovered-only filter was
 prototyped as a throwaway test scaffold in Iter-3.8 and removed; it can
 seed Iter-8); Iter-9 (Window-/Style-Polish inkl. Footer-Move + perfectly

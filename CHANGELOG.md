@@ -8,6 +8,17 @@ describe what shipped per release, not every commit.
 
 ### Added
 
+- **Item rarity colouring.** Each row now surfaces its Core Keeper rarity
+  (`ObjectInfo.rarity`): the item name is tinted by rarity for **all** items
+  (Common/Poor keep the default text colour; Uncommon and above get their
+  rarity colour), and a rarity-coloured border frames the icon for
+  **Uncommon and above** (Common/Poor show no border, matching CK's own
+  `useDefaultColorForCommon` grouping). Colours come from CK's authoritative
+  `Manager.ui.GetSlotBorderRarityColor`. Applies to undiscovered (`???`) rows
+  too, so an unfound Legendary is already distinguishable. This is a distinct
+  axis from the Iter-3.7 cooked-food Base/Rare/Epic tiers. The border sprite is
+  a placeholder (a thick frame); real pixel-art / 9-slice polish is deferred to
+  a later iteration.
 - **Variation-aware Cooked-Food tracking.** Each concrete `(ingredient1,
   ingredient2)`-permutation is now a separate discovery token in the
   checklist (e.g. Mushroom-Soup ≠ Tomato-Soup), mirroring CK's own
