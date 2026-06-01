@@ -17,8 +17,8 @@ describe what shipped per release, not every commit.
   `Manager.ui.GetSlotBorderRarityColor`. Applies to undiscovered (`???`) rows
   too, so an unfound Legendary is already distinguishable. This is a distinct
   axis from the Iter-3.7 cooked-food Base/Rare/Epic tiers. The border sprite is
-  a placeholder (a thick frame); real pixel-art / 9-slice polish is deferred to
-  a later iteration.
+  a placeholder (a white 9-slice ring, tinted by rarity); real pixel-art is
+  deferred to a later iteration.
 - **Variation-aware Cooked-Food tracking.** Each concrete `(ingredient1,
   ingredient2)`-permutation is now a separate discovery token in the
   checklist (e.g. Mushroom-Soup ≠ Tomato-Soup), mirroring CK's own

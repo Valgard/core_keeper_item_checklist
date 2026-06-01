@@ -482,6 +482,8 @@ The `RarityBorder` child of the `ItemRow` prefab uses **`maskInteraction: 1`
 the Iter-5 scrollbar's `None`). Sorting order 49 places the hollow frame above
 the icon (order 48). It defaults to `m_Enabled: 0` (hidden until `Bind` proves
 rarity ≥ Uncommon). The sprite is the placeholder `ui_rarity_border` (a white
-1-px hollow frame, tinted at runtime); the frame is intentionally thick (a 1-px
-ring on an 8×8 sprite uniformly stretched) — real 9-slice / pixel-art polish is
-deferred to Iter-9.
+1-px hollow frame, tinted at runtime), rendered as a proper **9-slice**
+(`spriteBorder {1,1,1,1}` in its `.meta`, `m_DrawMode: 1`) so the 1-px ring
+stays a thin fixed-pixel frame at any `m_Size` instead of thickening with the
+sprite. Real pixel-art (a designed border in place of the tinted white ring)
+remains Iter-9 polish.

@@ -157,8 +157,9 @@ cooked-food tiers (`CookedFoodCD.rareVersion`/`epicVersion`). Two non-obvious
 facts proven in-game (see `docs/gotchas.md`): the label tint must use
 `SetTempColor(c, keepColorOnStart: true)` after `Render()` or it blanks on the
 first open (PugText `renderOnStart`), and the shipped `ui_rarity_border.png`
-placeholder was fully transparent (fixed to a white hollow frame; real
-9-slice/pixel-art border is **Iter-9** polish, as the current frame is thick).
+placeholder was fully transparent (fixed to a white hollow frame, rendered as a
+9-slice via `spriteBorder {1,1,1,1}` so the ring stays thin; real pixel-art
+border remains **Iter-9** polish).
 Full mechanism in `docs/architecture.md § Rarity Colouring (Iter-6)`. Pending:
 Iter-7
 (Listen-Sortierung); Iter-8 (Filter+Suche — a discovered-only filter was
