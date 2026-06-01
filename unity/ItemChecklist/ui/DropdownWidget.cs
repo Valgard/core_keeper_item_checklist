@@ -30,6 +30,7 @@ namespace ItemChecklist.UI
         private Action<int> _onSelected;
         private int _selected;
         private bool _open;
+        private bool _armed;   // click-outside-close arming: skip the frame the popup opened
 
         public void Configure(IReadOnlyList<string> labels, int selectedIndex, Action<int> onSelected)
         {
@@ -106,6 +107,19 @@ namespace ItemChecklist.UI
             _open = open;
             if (popupPanel != null) popupPanel.SetActive(open);
             if (caret != null) caret.sprite = open ? caretOpen : caretClosed;
+        }
+
+        // Click-outside-to-close. Runs in LateUpdate (after CK's UIMouse has
+        // processed clicks this frame): an option/toggle click has already set
+        // _open=false via SelectOption/TogglePopup, so only a genuine OUTSIDE
+        // click reaches here with _open still true. The _armed guard skips the
+        // frame the popup was opened on, so the opening click doesn't close it.
+        private void LateUpdate()
+        {
+            if (!_open) { _armed = false; return; }
+            if (!_armed) { _armed = true; return; }
+            if (Input.GetMouseButtonDown(0))
+                SetOpen(false);
         }
 
         // Template child lookup — child names must match the prefab authoring.
