@@ -14,6 +14,7 @@ namespace ItemChecklist.UI
         public Transform rowsContent;     // assigned to RowsContainer/Content in Editor
         public GameObject rowPrefab;      // assigned to ItemRow.prefab in Editor
         public UIScrollWindow scrollWindow;
+        public AscDescToggle ascDescToggle;
 
         private ItemChecklistContent _content;
 
@@ -55,6 +56,17 @@ namespace ItemChecklist.UI
             root.SetActive(true);
             ApplyTheme();
             PopulateContent();
+            WireControls();
+        }
+
+        private void WireControls()
+        {
+            var model = ItemChecklistMod.ListView;
+            if (model == null) return;
+            model.OnResultsChanged -= OnViewResultsChanged;
+            model.OnResultsChanged += OnViewResultsChanged;
+            if (ascDescToggle != null)
+                ascDescToggle.Configure(model.Ascending, asc => { model.Ascending = asc; });
         }
 
         public void HideUI()
