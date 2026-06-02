@@ -25,5 +25,19 @@ namespace ItemChecklist.UI
             var model = ItemChecklistMod.ListView;
             if (model != null) model.SearchText = current;
         }
+
+        /// <summary>
+        /// Set the field text to <paramref name="text"/> WITHOUT triggering a push
+        /// back to the model. Used by the window to sync the field to the model's
+        /// current SearchText on open and after a re-bake (when a fresh
+        /// ItemListViewModel replaces the old one). Resets the change-detection cache
+        /// so the synced value is not re-pushed on the next frame.
+        /// </summary>
+        public void SyncFrom(string text)
+        {
+            text ??= "";
+            SetInputText(text);
+            _lastPushed = text;
+        }
     }
 }

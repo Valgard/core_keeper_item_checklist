@@ -16,8 +16,12 @@ namespace ItemChecklist.UI
         public UIScrollWindow scrollWindow;
         public AscDescToggle ascDescToggle;
         public DropdownWidget sortDropdown;
+        public DropdownWidget filterDropdown;
+        public SearchBar searchBar;
+        public ClearSearchButton clearSearchButton;   // declared here; wired to its SearchBar in the window prefab (later task)
 
         private ItemChecklistContent _content;
+        private ItemListViewModel _wiredModel;   // last model whose OnResultsChanged we subscribed to (for clean re-bake unsubscribe)
 
         private ItemChecklistContent Content
         {
@@ -30,6 +34,7 @@ namespace ItemChecklist.UI
         }
 
         private static readonly string[] SortLabels = { "Name", "Rarity", "Found", "Category" };
+        private static readonly string[] FilterLabels = { "All", "Discovered", "Undiscovered" };
 
         private static readonly MemberInfo MiScrollable = typeof(UIScrollWindow).GetMembersChecked().FirstOrDefault(x => x.GetNameChecked() == "_scrollable");
         private static readonly MemberInfo MiUpdateScrollHeight = typeof(UIScrollWindow).GetMembersChecked().FirstOrDefault(x => x.GetNameChecked() == "UpdateScrollHeight");
@@ -66,12 +71,19 @@ namespace ItemChecklist.UI
         {
             var model = ItemChecklistMod.ListView;
             if (model == null) return;
+            if (_wiredModel != null && !ReferenceEquals(_wiredModel, model))
+                _wiredModel.OnResultsChanged -= OnViewResultsChanged;   // release the discarded model from the previous bake
             model.OnResultsChanged -= OnViewResultsChanged;
             model.OnResultsChanged += OnViewResultsChanged;
+            _wiredModel = model;
             if (ascDescToggle != null)
                 ascDescToggle.Configure(model.Ascending, asc => { model.Ascending = asc; });
             if (sortDropdown != null)
                 sortDropdown.Configure(SortLabels, (int)model.Mode, i => { model.Mode = (SortMode)i; });
+            if (filterDropdown != null)
+                filterDropdown.Configure(FilterLabels, (int)model.Filter, i => { model.Filter = (DiscoveryFilter)i; });
+            if (searchBar != null)
+                searchBar.SyncFrom(model.SearchText);
         }
 
         public void HideUI()
@@ -177,6 +189,11 @@ namespace ItemChecklist.UI
         {
             if (root == null || !root.activeSelf) return;
             PopulateContent();   // SetCount + UpdateScrollHeight + ResetScroll + RefreshVisible
+            // After PopulateContent (which Recomputes the fresh model and refreshes content
+            // synchronously), re-wire so the control callbacks capture the new ItemListViewModel
+            // and the search field re-syncs. Order matters: PopulateContent must run first so its
+            // Recompute's OnResultsChanged isn't double-handled before the subscription is (re)set.
+            WireControls();
         }
 
         /// <summary>
