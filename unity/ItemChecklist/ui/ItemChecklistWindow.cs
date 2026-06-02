@@ -148,7 +148,11 @@ namespace ItemChecklist.UI
             if (catalog == null || catalog.Count == 0)
                 return "Item Checklist";
             float percent = 100f * state.Count / catalog.Count;
-            return $"Item Checklist — {state.Count} / {catalog.Count} ({percent:F1}%)";
+            string headline = $"Item Checklist — {state.Count} / {catalog.Count} ({percent:F1}%)";
+            var model = ItemChecklistMod.ListView;
+            if (model != null && model.IsFiltered)
+                headline += $" · {model.Count} shown";
+            return headline;
         }
 
         private void OnDiscoveryChanged()
@@ -184,6 +188,7 @@ namespace ItemChecklist.UI
         private void OnViewResultsChanged()
         {
             if (root == null || !root.activeSelf) return;
+            if (title != null) title.Render(FormatTitle());
             var content = Content;
             if (content == null) return;
             var model = ItemChecklistMod.ListView;

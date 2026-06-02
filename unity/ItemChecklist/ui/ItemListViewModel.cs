@@ -68,11 +68,20 @@ namespace ItemChecklist.UI
             set { if (value != filter) { filter = value; Recompute(); } }
         }
 
+        /// <summary>
+        /// True when the discovery filter or the name search is narrowing the view
+        /// (i.e. the result set is a strict subset of the catalog for a reason the
+        /// player chose). Distinct from `Count != catalog.Count`, which is only
+        /// accidentally equivalent — a fully-completed "Discovered" filter has
+        /// `Count == catalog.Count` yet is still filtered.
+        /// </summary>
+        public bool IsFiltered => filter != DiscoveryFilter.All || searchText.Trim().Length > 0;
+
         public void Refresh() => Recompute();
 
         public void Recompute()
         {
-            // 1. Collect visible catalog indices (Iter-7: filter=All, search="").
+            // 1. Collect visible catalog indices, applying the active discovery filter + name search.
             var indices = new List<int>(catalog.Count);
             int discovered = 0;
             string needle = searchText.Trim().ToLowerInvariant();
@@ -86,7 +95,6 @@ namespace ItemChecklist.UI
                 if (filter == DiscoveryFilter.Undiscovered && isDisc) continue;
                 if (needle.Length > 0)
                 {
-                    if (!isDisc) continue;
                     if (e.DisplayName.ToLowerInvariant().IndexOf(needle, StringComparison.Ordinal) < 0)
                         continue;
                 }
