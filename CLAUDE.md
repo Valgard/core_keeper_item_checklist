@@ -198,6 +198,20 @@ rather than a per-skin completion tracker. Revisit only if per-skin tracking
 becomes desirable; it would need a UI story for grouping/expanding variants so
 the list doesn't balloon with near-duplicates. *(Backlog item, distinct from
 the Iter-7.1 NonUsable-materials catalog fix — see `docs/gotchas.md`.)*
+**Iter-12 (tentative) — pet/creature discovery.** The bake blanket-excludes
+`ObjectType.Creature` and `ObjectType.Critter` (`ItemCatalog.cs`), so tamed
+pets and critters never get a checklist row even once discovered. This is the
+**same bug class as the Iter-7.1 NonUsable fix** — a blanket ObjectType
+exclude that also drops legitimately obtainable entries. IB does *not*
+blanket-exclude them: `ObjectUtility.IsNonObtainable` keeps anything with
+`PetCD` (short-circuit, `ObjectUtility.cs:390`) and craftable non-cattle
+creatures (the `CraftingCD && !CattleCD` exception at `:393`). A fix would
+mirror those exceptions — keep `Creature`/`Critter` entries that carry `PetCD`
+or `CraftingCD`(&& !`CattleCD`), still dropping wild mobs.
+`PugDatabase.HasComponent<T>` is already proven sandbox-safe in this mod
+(used for `CookedFoodCD`), so the component checks are viable; the harder part
+is deciding *which* creatures belong in a player-facing "items found" list.
+*(Backlog item, sibling to Iter-7.1.)*
 See `git log` for canonical per-iter merge points and `docs/superpowers/specs/`
 for design docs.
 
