@@ -292,8 +292,23 @@ mask.localPos.y += X / 2
 
 Changing only one of the two shifts the whole mask instead of extending it
 upward. This was settled by empirical 4-build calibration, not by a static
-reading of the prefab — the final values are `windowHeight = 6.5`,
+reading of the prefab — the Iter-3.8 values were `windowHeight = 6.5`,
 mask `scale.y = 6.5`, mask `localPos.y = -2.0`.
+
+**Iter-9 enlargement.** The window was sized to near-fullscreen with a thin
+**uniform border matching CK's inventory margin** (0.25 world-units). Final
+values: background + root collider `29.5 × 16.375`, `windowHeight = 13`, mask
+`scale.y = 13` / `localPos.y = -5.25`, `RowsContainer.y = 3.75`, row width
+`27.5`. The window is centered in the camera's **30 × 16.875-unit viewport**
+(measured once via a temporary log of `Manager.camera.uiCamera.orthographicSize`
+= `8.4375`, aspect 16:9; `world_height = 2·orthoSize`, `world_width = height·aspect`).
+**No runtime sizing logic:** CK's orthographic UI camera shows a constant world
+area regardless of resolution, and CK has no UI-scale option, so a fixed prefab
+size is "fullscreen with border" on every resolution (empirically confirmed).
+`RowHeight` stays `2.5` (native), so the recycled pool auto-grew via
+`ComputePoolSize` (`pool = 7` at `windowHeight 13`). The bottom shows a
+deliberately clipped partial row as a "more below" affordance (whole-row flush is
+a separate later Iter-9 slice).
 
 ### Scrollbar (Iter-5)
 
@@ -745,3 +760,38 @@ fileID-based, so re-parenting doesn't break wiring.
 Pixel-exact spacing, a real pixel-art caret, and overlap-free header geometry
 are **Iter-9** polish; this iteration places controls in the approved L→R order
 (Search · Sort+AscDesc · Filter) and confirms they're clickable.
+
+---
+
+## Shortcut-Panel & HUD Suppression (Iter-9)
+
+While the checklist is open, three things that would otherwise show over it are
+suppressed; all are scoped to `ItemChecklistWindow.Instance.Root.activeSelf` and
+release automatically when the window closes/auto-hides (so a vanilla inventory
+sees normal behaviour).
+
+**Why they appear at all:** CoreLib forces `UIManager.isAnyInventoryShowing ==
+true` for any mod UI (it patches the aggregate getter; per-UI `isShowing` getters
+stay unpatched). That makes CK treat the checklist like an inventory — enabling
+the keyboard-shortcuts panel's toggle key (S) and keeping the HUD's
+inventory-context elements live.
+
+| Target | Mechanism | File |
+|---|---|---|
+| `ShortCutsWindow` ("Tastenkürzel" panel) | `LateUpdate` **prefix** → `__instance.HideUI()` + `return false`. **Load-bearing:** runs every frame, so it beats the S-key toggle (which `ShortcutsCanBeToggled` does *not* gate). | `ShortCutsWindowSuppressPatch.cs` |
+| `InventoryShortCutsButton` ("?" prompt) | `ShortcutsCanBeToggled` **postfix** → `__result = false`. Gates the prompt visuals (`UpdateVisuals`), so the prompt disappears. | `InventoryShortCutsButtonSuppressPatch.cs` |
+| Top-left HUD (health/food/ability bars) | `ShowUI` → `Manager.ui.TemporarilyDisableGameplayUI()`; `HideUI` → `EnableTemporarilyDisabledGameplayUI()` (guarded for the Awake-time `HideUI`). | `ui/ItemChecklistWindow.cs` |
+| Bottom-right button hints (Tab/E…) | `InGameButtonHintsUI.LateUpdate` **prefix** → forces the **public** `container` GameObject inactive + `return false` (the stock `LateUpdate` re-asserts `container.SetActive(showKeyHints)` every frame, so a one-shot hide is overwritten). | `InGameButtonHintsSuppressPatch.cs` |
+
+**Decompile facts (verified against this install's `Pug.Other.dll`):**
+`ShortCutsWindow.LateUpdate` is a `protected override` declared on the type (so
+the patch binds); `HideUI()` is `public` (`root.SetActive(false)`).
+`InventoryShortCutsButton.ShortcutsCanBeToggled()` is `public static bool` and
+drives only the prompt visuals — **not** the S keybind (`ToggleInventoryShortcuts`
+checks `isAnyInventoryShowing` directly), which is why the panel needs the
+per-frame `LateUpdate` prefix. `TemporarilyDisableGameplayUI()` flips a private
+**runtime** scale-multiplier field (CK's own RadicalMenu-open mechanism, ~51 HUD
+elements self-scale to zero) — **not** `Manager.prefs.hideInGameUI`, which
+`SetDirty()`s to disk. All four patch targets are sandbox-safe (Harmony
+attributes run in trusted `0Harmony.dll`; the HUD calls are public `Manager.ui`
+methods).

@@ -8,6 +8,18 @@ describe what shipped per release, not every commit.
 
 ### Added
 
+- **Bigger, near-fullscreen window.** The checklist window is now much larger —
+  wider entries and more rows visible — sized to a thin, uniform border that
+  matches Core Keeper's own inventory margin. Because Core Keeper's UI camera
+  shows a constant world area, the fixed size stays correct (and bordered) on
+  every resolution. Font and row height are unchanged (more content, not zoom).
+- **Cleaner full-screen view while the checklist is open.** The game HUD is
+  hidden while the checklist is up and restored on close: the top-left
+  health/food/ability bars (via Core Keeper's own non-persisting menu-open
+  mechanism) and the bottom-right button-hint prompts (Tab/E…). Core Keeper's
+  keyboard-shortcuts help panel (and its "?" prompt) also no longer appears over
+  the checklist. All of this is scoped to the checklist being on screen —
+  opening a vanilla inventory restores normal HUD/help behaviour.
 - **Discovery filter and name search.** A filter dropdown narrows the
   checklist to **All**, **Discovered**, or **Undiscovered** items. A search box
   filters the list by item name as you type — matched against the localized

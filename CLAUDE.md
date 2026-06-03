@@ -203,12 +203,38 @@ layer, caret PPU scale, duplicate-and-strip leftover button hijacks clicks) in
 `docs/architecture.md § Filter & Search (Iter-8)`. **Iter-8.1 (tentative) —
 search `???`-visibility toggle:** a header checkbox switching search between
 Option A (show undiscovered matches as `???`) and discovered-only, with a
-persisted preference. **Iter-9 (Polish)** — dropdown content-fit auto-width via runtime
+persisted preference. **Iter-9 (Polish) — in progress, delivered as small
+slices (one item per slice).** **Slice DONE (2026-06-03): window size + help-/HUD
+suppression.** The checklist is now **near-fullscreen with a thin uniform border
+matching CK's inventory margin** (0.25 world-units). Final geometry: background
+`29.5×16.375`, `windowHeight 13`, mask `scale.y 13` / `localPos.y -5.25`,
+`RowsContainer.y 3.75`, row width `27.5` — a **fixed** size, no runtime sizing:
+CK's orthographic UI camera shows a constant world area (measured
+`orthographicSize 8.4375`, 16:9 → **30×16.875-unit viewport**) and has **no
+UI-scale option**, so a fixed size is correct on every resolution
+(empirically confirmed to scale cleanly). Native font/RowHeight (density, not
+zoom); the row pool auto-grew via `ComputePoolSize`. **Help-panel suppression:**
+CK's `ShortCutsWindow` (the "Tastenkürzel" panel, toggled by **S** because
+CoreLib forces `isAnyInventoryShowing == true` for a mod UI) and its "?" prompt
+(`InventoryShortCutsButton`) are suppressed while the window is open via two
+auto-discovered Harmony patches — a `ShortCutsWindow.LateUpdate` **prefix**
+(`__instance.HideUI()` + skip; this is the **load-bearing** half because
+`InventoryShortCutsButton.ShortcutsCanBeToggled` gates only the prompt visuals,
+**not** the S keybind) and a `ShortcutsCanBeToggled` **postfix** → `false` (hides
+the prompt). **HUD-hide:** top-left bars via
+`Manager.ui.TemporarilyDisableGameplayUI()`/`EnableTemporarilyDisabledGameplayUI()`
+(non-persisting runtime field — CK's own RadicalMenu-open mechanism; **never**
+`Manager.prefs.hideInGameUI`, which `SetDirty()`s to disk), bottom-right hints via
+an `InGameButtonHintsUI.LateUpdate` prefix forcing its **public** `container`
+GameObject inactive. All suppression is scoped to
+`ItemChecklistWindow.Instance.Root.activeSelf` and releases on auto-hide (a
+vanilla inventory restores normal HUD/help). UI-camera read:
+`Manager.camera.uiCamera.orthographicSize` (sandbox-safe). **Remaining Iter-9
+slices (each its own):** dropdown content-fit auto-width via runtime
 `PugText` text measurement (also needed for Iter-8's longer "Undiscovered"
 label), exact spacing, real pixel-art sprites, caret/header refinement, and a
-header-strip layout (the sort controls currently overlap list row 0); real
-pixel-art rarity border; perfectly flush window; scrollbar visual polish + real
-sprites. **Iter-10 (tentative)** — code optimisations + extracting
+header-strip layout; real pixel-art rarity border; perfectly-flush /
+whole-row option; scrollbar visual polish + real sprites. **Iter-10 (tentative)** — code optimisations + extracting
 `DropdownWidget` into a standalone/nested prefab for true reuse, after Iter-9.
 **Iter-11 (tentative) — per-variation/skin tracking.** The bake collapses
 every item family to its `variation == 0` primary entry (`ItemCatalog.cs:130`,
