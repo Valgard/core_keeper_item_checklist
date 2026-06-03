@@ -795,3 +795,28 @@ elements self-scale to zero) — **not** `Manager.prefs.hideInGameUI`, which
 `SetDirty()`s to disk. All four patch targets are sandbox-safe (Harmony
 attributes run in trusted `0Harmony.dll`; the HUD calls are public `Manager.ui`
 methods).
+
+
+## Item-Row Layout (Iter-9)
+
+- **RowHeight is a single source of truth, read from the prefab.**
+  `ItemChecklistContent.Init` reads `RowHeight` from the row prefab's
+  `background` SpriteRenderer (`size.y`, authoritative in Sliced draw mode);
+  `ItemRow.RowHeight` is only a compile-time fallback. Change the row background
+  `m_Size.y` in `ItemRow.prefab` alone and the pool size, row spacing and total
+  scroll height all follow.
+- **Flush is RowHeight-independent.** Rows are placed by
+  `y = MaskTopLocalY - RowHeight*(displayIdx + 0.5)`: row 0's TOP is pinned to the
+  fixed `MaskTopLocalY` (1.25, the content-local mask top) and each centre is
+  offset by `RowHeight/2`, so the list start/end stay flush for any row height
+  (windowHeight = maskHeight and content = count*RowHeight do the rest). Replaces
+  the old `-(displayIdx*RowHeight)`, which only stayed flush at the original 2.5.
+- **Checklist checkbox.** `ItemRow.Bind` enables the empty checkbox sprite
+  (`checkmark`) on **every** row; discovered rows additionally enable a
+  `checkFill` child (the `ui_icon_requirement` glyph, sorting order above the box)
+  -- empty box = todo, box+check = done.
+- **Side margins + scrollbar.** Window content is symmetric +/-14.2; the row
+  background spans `[-14.2, 13.95]` so it ends at the scrollbar's left edge
+  instead of running under it. Header field heights are 0.7 (contents centred);
+  the search field's `selectedMarker` is a full-field controller-focus highlight
+  rendered in front of the field background.

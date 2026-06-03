@@ -114,7 +114,7 @@ Iter-3.5b lessons: `docs/gotchas.md § SpriteMask Clipping`.
 
 ## Iter-Roadmap (live)
 
-As of 2026-05-30: Iter-3.5/3.5c/3.6/3.7/3.8 are DONE on main. Iter-3.8
+As of 2026-06-04: Iter-3.5 through 8 (incl. the 3.x/7.1 point-iters) are DONE on main; Iter-9 is DONE on branch `iter-9` (pending ff-merge). Iter-3.8
 replaced the per-entry SpawnRows (one GameObject per ~10718 catalog
 entries, ~905 ms open freeze) with viewport virtualization: a fixed ~5-row
 pool recycled from `IScrollable.UpdateContainingElements`, reporting the
@@ -134,7 +134,7 @@ prefab change — zero C#:** once `UIScrollWindow.scrollBar` references the
 ScrollBar.UpdateScrollBarPosition` drives handle sizing, position, and
 mouse-wheel sync itself (verified against Item Browser, which has no scrollbar
 C#). Scroll arrows stay unwired (`fileID: 0`); track-position fine-tuning and
-real sprites fold into Iter-9. Two non-obvious facts proven during the build:
+real sprites fold into Iter-12 (pixel-art). Two non-obvious facts proven during the build:
 the scrollbar SpriteRenderers must use **`maskInteraction: None`** to stay
 unclipped by the row SpriteMask (orders 46/47 sit inside the 40..55 mask
 range), and `ButtonUIElement.LateUpdate` toggles **GameObject activity** of
@@ -161,7 +161,7 @@ facts proven in-game (see `docs/gotchas.md`): the label tint must use
 first open (PugText `renderOnStart`), and the shipped `ui_rarity_border.png`
 placeholder was fully transparent (fixed to a white hollow frame, rendered as a
 9-slice via `spriteBorder {1,1,1,1}` so the ring stays thin; real pixel-art
-border remains **Iter-9** polish).
+border remains **Iter-12** (pixel-art) polish).
 Full mechanism in `docs/architecture.md § Rarity Colouring (Iter-6)`. **Iter-7
 (DONE):** runtime-switchable list sorting — four modes (Name, Rarity, Found,
 Category/ObjectType), each with ascending/descending direction. A reusable
@@ -200,82 +200,76 @@ search matches the *real* name of all items; undiscovered matches still render
 Hard-won prefab traps (dead default material → invisible, Default-vs-GUI sorting
 layer, caret PPU scale, duplicate-and-strip leftover button hijacks clicks) in
 `docs/gotchas.md § Search Field / Header (Iter-8)`; full mechanism in
-`docs/architecture.md § Filter & Search (Iter-8)`. **Iter-8.1 (tentative) —
-search `???`-visibility toggle:** a header checkbox switching search between
-Option A (show undiscovered matches as `???`) and discovered-only, with a
-persisted preference. **Iter-9 (Polish) — in progress, delivered as small
-slices (one item per slice).** **Slice DONE (2026-06-03): window size + help-/HUD
-suppression.** The checklist is now **near-fullscreen with a thin uniform border
-matching CK's inventory margin** (0.25 world-units). Final geometry: background
-`29.5×16.375`, `windowHeight 13`, mask `scale.y 13` / `localPos.y -5.25`,
-`RowsContainer.y 3.75`, row width `27.5` — a **fixed** size, no runtime sizing:
-CK's orthographic UI camera shows a constant world area (measured
-`orthographicSize 8.4375`, 16:9 → **30×16.875-unit viewport**) and has **no
-UI-scale option**, so a fixed size is correct on every resolution
-(empirically confirmed to scale cleanly). Native font/RowHeight (density, not
-zoom); the row pool auto-grew via `ComputePoolSize`. **Help-panel suppression:**
-CK's `ShortCutsWindow` (the "Tastenkürzel" panel, toggled by **S** because
-CoreLib forces `isAnyInventoryShowing == true` for a mod UI) and its "?" prompt
-(`InventoryShortCutsButton`) are suppressed while the window is open via two
-auto-discovered Harmony patches — a `ShortCutsWindow.LateUpdate` **prefix**
-(`__instance.HideUI()` + skip; this is the **load-bearing** half because
-`InventoryShortCutsButton.ShortcutsCanBeToggled` gates only the prompt visuals,
-**not** the S keybind) and a `ShortcutsCanBeToggled` **postfix** → `false` (hides
-the prompt). **HUD-hide:** top-left bars via
-`Manager.ui.TemporarilyDisableGameplayUI()`/`EnableTemporarilyDisabledGameplayUI()`
-(non-persisting runtime field — CK's own RadicalMenu-open mechanism; **never**
-`Manager.prefs.hideInGameUI`, which `SetDirty()`s to disk), bottom-right hints via
-an `InGameButtonHintsUI.LateUpdate` prefix forcing its **public** `container`
-GameObject inactive. All suppression is scoped to
-`ItemChecklistWindow.Instance.Root.activeSelf` and releases on auto-hide (a
-vanilla inventory restores normal HUD/help). UI-camera read:
-`Manager.camera.uiCamera.orthographicSize` (sandbox-safe). **Remaining Iter-9
-slices (each its own):** dropdown content-fit auto-width via runtime
-`PugText` text measurement (also needed for Iter-8's longer "Undiscovered"
-label), exact spacing, real pixel-art sprites, caret/header refinement, and a
-header-strip layout; real pixel-art rarity border; perfectly-flush /
-whole-row option; scrollbar visual polish + real sprites. **Iter-10 (tentative)** — code optimisations + extracting
-`DropdownWidget` into a standalone/nested prefab for true reuse, after Iter-9.
-**Iter-11 (tentative) — per-variation/skin tracking.** The bake collapses
-every item family to its `variation == 0` primary entry (`ItemCatalog.cs:130`,
-"Phase-1 scope" comment), so colour/skin/state variants (dyed armour, torch
-on/off, crop growth stages, …) never get their own checklist row. CK itself
-tracks discovery per `(objectID, variation)` (`DiscoveredState.PackKey`), and
-IB exposes the choice via an `ignoreVariation` group key
-(`ObjectUtility.cs:422`) — so the data supports it; we deliberately hardwired
-"always ignore variation" to keep the list a *one-tick-per-item* checklist
-rather than a per-skin completion tracker. Revisit only if per-skin tracking
-becomes desirable; it would need a UI story for grouping/expanding variants so
-the list doesn't balloon with near-duplicates. *(Backlog item, distinct from
-the Iter-7.1 NonUsable-materials catalog fix — see `docs/gotchas.md`.)*
-**Iter-12 (tentative) — pet/creature discovery.** The bake blanket-excludes
-`ObjectType.Creature` and `ObjectType.Critter` (`ItemCatalog.cs`), so tamed
-pets and critters never get a checklist row even once discovered. This is the
-**same bug class as the Iter-7.1 NonUsable fix** — a blanket ObjectType
-exclude that also drops legitimately obtainable entries. IB does *not*
-blanket-exclude them: `ObjectUtility.IsNonObtainable` keeps anything with
-`PetCD` (short-circuit, `ObjectUtility.cs:390`) and craftable non-cattle
-creatures (the `CraftingCD && !CattleCD` exception at `:393`). A fix would
-mirror those exceptions — keep `Creature`/`Critter` entries that carry `PetCD`
-or `CraftingCD`(&& !`CattleCD`), still dropping wild mobs.
-`PugDatabase.HasComponent<T>` is already proven sandbox-safe in this mod
-(used for `CookedFoodCD`), so the component checks are viable; the harder part
-is deciding *which* creatures belong in a player-facing "items found" list.
-*(Backlog item, sibling to Iter-7.1.)*
-**Iter-13 (tentative) — F1 guard misses loading screen & cutscenes.** The F1
-toggle in `ItemChecklistMod.Update` only blocks opening when a Vanilla
-menu/inventory/text-field/chat is active (`Manager.menu.IsAnyMenuActive()`,
-`Manager.ui.isPlayerInventoryShowing`, `Manager.input.textInputIsActive`,
-chat-window check). It does **not** block during the **world loading screen**
-or **in-game cutscenes**, so F1 pops the checklist over both. Completeness gap
-in the Iter-4 exclusion logic. Fix = add the missing state guards to the
-open-branch. Candidate signals (all need ILSpy + sandbox verification before
-use — do not assume the API names): for loading, gate on world/player
-readiness (the same `ClientWorldStateSystem.HasRunAtLeastOnce` /
-`Manager.main.player != null` signal the bake already waits on, or a
-screen-fade flag); for cutscenes, a cutscene-active flag on `Manager` (e.g. a
-`Manager.cutscene`/`Manager.menu` cutscene state or an input-locked flag).
-*(Backlog item — bugfix follow-up to Iter-4's toggle guard.)*
+`docs/architecture.md § Filter & Search (Iter-8)`. **Iter-9 (Polish) — DONE (2026-06-04, branch `iter-9`).** A large UI
+layout/behaviour pass:
+- **Window + suppression:** near-fullscreen window, thin uniform 0.25u border
+  (matching CK's inventory margin); **fixed** size — CK's orthographic UI camera
+  shows a constant world area (`orthographicSize 8.4375`, 16:9 -> 30x16.875u) with
+  no UI-scale option, so a fixed size is correct on every resolution. Help panel
+  (`ShortCutsWindow`, toggled by **S**) + "?" prompt suppressed while open via two
+  auto-discovered Harmony patches (the `ShortCutsWindow.LateUpdate` **prefix** is
+  load-bearing -- `ShortcutsCanBeToggled` only gates the prompt, not the S keybind);
+  HUD hidden via `Manager.ui.TemporarilyDisableGameplayUI()` (never
+  `Manager.prefs.hideInGameUI`, which persists to disk) + an
+  `InGameButtonHintsUI.LateUpdate` prefix; cursor restored via a `UIMouse.LateUpdate`
+  postfix; ESC->pause race fixed by forcing `MenuManager.IsPauseDisabled` while open.
+- **Header:** Sort/Filter dropdowns sized to the widest entry, right-aligned cluster
+  flush to the scrollbar (x 14.2); popups widened to the full dropdown footprint;
+  field heights 0.7 (bottom-fixed); square 0.7x0.7 toggle/ascdesc buttons; search
+  field to 1/3 width with a full-field controller-focus highlight (the
+  `TextInputField.selectedMarker`); footer split (counter right / "N shown" left);
+  first-open input-leak fixed (ASCII "..." search hint avoided a thinTiny word-wrap
+  crash that aborted ShowUI before CoreLib set currentInterface); the clear button
+  at an off-grid x (4.005) to dodge the on-grid point-filter distortion (see
+  `docs/gotchas.md` + the `project-corekeeper-sprite-ongrid-distortion` memory) and
+  pulled forward in Z (`m_Center.z`) so its click wins the `UIMouse` raycast over
+  the field collider.
+- **Margins:** window side margins reduced + equalised, content symmetric +/-14.2.
+- **Item rows:** height 2.5->1.5; **`RowHeight` read from the row prefab's
+  background** at `Init` (single source of truth -- change the bg `m_Size.y` alone
+  and the list re-spaces); **checklist-style checkbox** (empty box on every row +
+  `ui_icon_requirement` inside when discovered); viewport pool buffer +2->+4;
+  **RowHeight-independent flush** (row 0's TOP pinned to a fixed `MaskTopLocalY`,
+  each row centre offset by `RowHeight/2`) so list start/end stay flush at any row
+  height; row background ends at the scrollbar's left edge (no overlap). Mechanism
+  in `docs/architecture.md` / `docs/gotchas.md`.
+
+### Future roadmap (frozen 2026-06-04)
+- **Iter-10 -- re-evaluate Sort & Filter settings.** Are the current sort modes
+  (Name/Rarity/Found/Category) and filters (All/Discovered/Undiscovered) sensible,
+  and should other options be added? Finalise the option set *before* Iter-11
+  (localisation) so the labels are stable.
+- **Iter-11 -- localisation.** Translatable "N shown", keybind display name, search
+  hint + sort/filter labels via CoreLib `LocalizationModule`.
+- **Iter-12 -- real pixel-art sprites.** Replace the placeholder rarity border
+  (white 9-slice hollow frame) + scrollbar track/handle sprites.
+- **Iter-13 -- `DropdownWidget` prefab extraction.** Extract the widget into a
+  standalone/nested prefab for true reuse.
+- **Iter-14 -- code refactor / optimisations + search caret vertical alignment.**
+  General C# cleanup; plus the search caret sits a few px too low --
+  `TextInputField` forces `characterMarkBlinker.transform.position =
+  pugText.position` every frame, so the fix is to move the white_pixel into a child
+  GO with a +Y offset and rewire `CharacterMarkBlinker.sr`.
+- **Iter-15 (tentative) -- F1 guard misses loading screen & cutscenes.** The F1
+  toggle in `ItemChecklistMod.Update` only blocks opening when a Vanilla
+  menu/inventory/text-field/chat is active; it does **not** block during the world
+  loading screen or in-game cutscenes, so F1 pops the checklist over both. Fix =
+  add the missing state guards (loading: `ClientWorldStateSystem.HasRunAtLeastOnce`
+  / `Manager.main.player != null` or a screen-fade flag; cutscenes: a cutscene /
+  input-locked flag -- all need ILSpy + sandbox verification). Bugfix follow-up to
+  Iter-4's toggle guard.
+- **Iter-16 (tentative) -- pet/creature discovery.** The bake blanket-excludes
+  `ObjectType.Creature`/`Critter`, so tamed pets/critters never get a row -- same
+  bug class as the Iter-7.1 NonUsable fix. IB keeps anything with `PetCD`
+  (`ObjectUtility.cs:390`) and craftable non-cattle creatures (`CraftingCD &&
+  !CattleCD`, `:393`); a fix would mirror those, still dropping wild mobs.
+  `PugDatabase.HasComponent<T>` is sandbox-safe here. Sibling to Iter-7.1.
+- **Iter-17 (tentative) -- per-variation/skin tracking.** The bake collapses every
+  family to its `variation == 0` entry (`ItemCatalog.cs:130`), so colour/skin/state
+  variants never get their own row. CK tracks discovery per `(objectID, variation)`
+  and IB exposes `ignoreVariation` (`ObjectUtility.cs:422`); we hardwired "ignore
+  variation" to keep a one-tick-per-item checklist. Revisit only with a UI story
+  for grouping/expanding variants. Distinct from the Iter-7.1 catalog fix.
 See `git log` for canonical per-iter merge points and `docs/superpowers/specs/`
 for design docs.
 

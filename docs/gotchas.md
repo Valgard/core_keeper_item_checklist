@@ -381,3 +381,27 @@ text-bearing UI — verify text in the Game view (build + run). For overlap/clic
 checks, the **BoxCollider gizmos** are reliable (that *is* what CK's 3D raycast
 sees). SpriteRenderer pieces (backgrounds, glyphs) *do* render in the Editor
 once their material + sorting layer are correct (see the two traps above).
+
+
+## Item Rows & Header (Iter-9)
+
+- **Small point-filtered sprites distort on the 1/16 grid.** A small
+  `SpriteRenderer` (e.g. the 5x5 `ui_icon_clear_search` clear button) renders
+  distorted (uneven pixel doubling) when its position lands **exactly** on a
+  `k/16` world coordinate; any off-grid nudge (even `+0.005`) makes it crisp.
+  Resolution-independent (verified across fullscreen/borderless/windowed) -- a
+  world/texel rounding ambiguity, not screen sub-pixel. CoreLib's `PixelSnap`
+  snaps *onto* `k/16`, so it is counterproductive here. See the
+  `project-corekeeper-sprite-ongrid-distortion` memory.
+- **Overlapping clickables: UIMouse picks the nearest collider along +Z.**
+  `UIMouse` raycasts from `pointer + back*5` along `Vector3.forward` and keeps
+  the smallest-distance hit. The clear button's collider sits inside the search
+  field's collider; both at `z-center 0` was a tie -> nondeterministic pick (the
+  X click sometimes focused the field instead of clearing). Fix: pull the inner
+  collider forward (`m_Center.z = -0.5`) so it is always hit first.
+- **The thinTiny font crashes on the real ellipsis (U+2026).** Rendering the
+  hint "Search<ellipsis>" with the real `...` glyph threw `IndexOutOfRangeException`
+  in `PugFont.AddNewLinesToLinesExceedingMaxWidth`, aborting `ShowUI` *before*
+  CoreLib set `currentInterface` -- which left `isAnyInventoryShowing` false, so
+  CK never blocked world input (clicks + WASD leaked through the open window).
+  Use ASCII "..." in the hint string.
