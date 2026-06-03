@@ -9,7 +9,8 @@ namespace ItemChecklist.UI
         public SpriteRenderer icon;
         public PugText label;
         public PugText placeholder;
-        public SpriteRenderer checkmark;
+        public SpriteRenderer checkmark;     // empty checkbox, shown on every row
+        public SpriteRenderer checkFill;     // requirement icon inside the box, discovered only
         public SpriteRenderer rarityBorder;   // Iter-6: rarity frame, shown for Uncommon+
 
         public const float RowHeight = 1.5f; // world units (~24px at 16 PPU)
@@ -22,15 +23,18 @@ namespace ItemChecklist.UI
                 if (icon != null) { icon.sprite = iconSprite; icon.enabled = true; }
                 if (label != null) label.Render(name);
                 if (placeholder != null) placeholder.gameObject.SetActive(false);
-                if (checkmark != null) checkmark.enabled = true;
             }
             else
             {
                 if (icon != null) icon.enabled = false;
                 if (label != null) label.Render("???");
                 if (placeholder != null) placeholder.gameObject.SetActive(true);
-                if (checkmark != null) checkmark.enabled = false;
             }
+
+            // Checkbox: empty box on every row; the requirement icon fills it only
+            // when the item is discovered (the checklist "done" tick).
+            if (checkmark != null) checkmark.enabled = true;
+            if (checkFill != null) checkFill.enabled = isDiscovered;
 
             // Iter-6 rarity colouring. Set the colour AFTER Render(): SetTempColor
             // writes the glyph SpriteRenderers that Render() rebuilds, so a colour
