@@ -57,7 +57,7 @@ namespace ItemChecklist.UI
             if (levelText != null)
                 levelText.Render(isDiscovered && level > 0 ? $"Lv {level}" : Dash);
             if (valueText != null)
-                valueText.Render(isDiscovered && sellValue >= 0 ? sellValue.ToString() : Dash);
+                valueText.Render(isDiscovered && sellValue > 0 ? sellValue.ToString() : Dash);
         }
     }
 }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using PugMod;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace ItemChecklist
@@ -50,7 +51,7 @@ namespace ItemChecklist
             public readonly Rarity Rarity;      // CK ObjectInfo.rarity (Poor..Legendary)
             public readonly ObjectType ObjectType;  // CK ObjectInfo.objectType (Category sort key)
             public readonly int Level;          // CK ObjectInfo.level
-            public readonly int SellValue;      // CK ObjectInfo.sellValue (-1 = unsellable)
+            public readonly int SellValue;      // 0 = unsellable/legendary; >0 = computed sell value
             public readonly bool IsCraftable;   // ObjectInfo.requiredObjectsToCraft non-empty
 
             public Entry(int objectId, int variation, string displayName, Sprite icon,
@@ -199,8 +200,8 @@ namespace ItemChecklist
                     iconCache[key] = info.smallIcon != null ? info.smallIcon : info.icon;
                     rarityCache[key] = info.rarity;
                     objectTypeCache[key] = info.objectType;
-                    levelCache[key]      = info.level;
-                    sellValueCache[key]  = info.sellValue;
+                    levelCache[key]      = PugDatabase.TryGetComponent<LevelCD>(od, out var lvlCd) ? lvlCd.level : 0;
+                    sellValueCache[key]  = ComputeSellValue(od, info);
                     craftableCache[key]  = info.requiredObjectsToCraft != null && info.requiredObjectsToCraft.Count > 0;
                 }
 
@@ -437,9 +438,62 @@ namespace ItemChecklist
             iconCache[key] = info.smallIcon != null ? info.smallIcon : info.icon;
             rarityCache[key] = info.rarity;
             objectTypeCache[key] = info.objectType;
-            levelCache[key]      = info.level;
-            sellValueCache[key]  = info.sellValue;
+            levelCache[key]      = PugDatabase.TryGetComponent<LevelCD>(od, out var lvlCdCooked) ? lvlCdCooked.level : 0;
+            sellValueCache[key]  = ComputeSellValue(od, info);
             craftableCache[key]  = info.requiredObjectsToCraft != null && info.requiredObjectsToCraft.Count > 0;
         }
+
+        // Faithful port of ItemBrowser ObjectUtility.GetValue (sell mode) +
+        // GetRaritySellValue. Returns 0 for unsellable items (None /
+        // CantBeSoldAuthoring / Legendary) — the row renders 0 as "—".
+        // sellValue < 0 is CK's "auto-compute" marker, NOT "unsellable":
+        // derive from rarity + crafting ingredients (+ cooked-food recursion).
+        private static int ComputeSellValue(ObjectDataCD od, ObjectInfo info)
+        {
+            if (info == null
+                || PugDatabase.HasComponent<CantBeSoldAuthoring>(od)
+                || info.rarity == Rarity.Legendary)
+                return 0;
+
+            int sellValue = info.sellValue;
+            if (sellValue < 0)
+            {
+                sellValue = GetRaritySellValue(info.rarity);
+
+                if (PugDatabase.HasComponent<CookedFoodAuthoring>(od))
+                {
+                    var primary = CookedFoodCD.GetPrimaryIngredientFromVariation(od.variation);
+                    var secondary = CookedFoodCD.GetSecondaryIngredientFromVariation(od.variation);
+                    sellValue = ComputeSellValue(primary) + ComputeSellValue(secondary);
+                }
+                else if (info.requiredObjectsToCraft != null)
+                {
+                    int extraSellFromIngredients = 0;
+                    foreach (var craftingObject in info.requiredObjectsToCraft)
+                    {
+                        var ingredientInfo = PugDatabase.GetObjectInfo(craftingObject.objectID, 0);
+                        if (ingredientInfo != null && ingredientInfo.sellValue != 0)
+                            extraSellFromIngredients += GetRaritySellValue(ingredientInfo.rarity) * craftingObject.amount;
+                    }
+                    if (extraSellFromIngredients > 0)
+                        sellValue = (int)math.round(math.max(1f, sellValue * 0.3f) + extraSellFromIngredients);
+                }
+
+                var randomization = Unity.Mathematics.Random.CreateFromIndex((uint)od.objectID).NextFloat(-0.1f, 0.1f);
+                sellValue = math.max(1, sellValue + (int)math.round(sellValue * randomization));
+            }
+            return sellValue;
+        }
+
+        // Recursion entry for cooked-food ingredient values (mirrors IB's
+        // GetValue(ObjectID, 0)): unsellable ingredients contribute 0.
+        private static int ComputeSellValue(ObjectID id)
+        {
+            var od = new ObjectDataCD { objectID = id, variation = 0 };
+            return ComputeSellValue(od, PugDatabase.GetObjectInfo(id, 0));
+        }
+
+        // from ItemBrowser ObjectUtility.GetRaritySellValue (InventoryUtility).
+        private static int GetRaritySellValue(Rarity rarity) => 1 + math.max(0, (int)rarity) * 5;
     }
 }
