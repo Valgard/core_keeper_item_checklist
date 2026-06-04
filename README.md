@@ -5,13 +5,20 @@ discovered. A scrollable in-game checklist (open with F1) lists all
 discoverable items — vanilla and mod-added alike — showing
 discovered/undiscovered state with item icons and localized names. Cooked-food
 permutations are tracked per ingredient pair. The list can be **sorted**
-(name / rarity / found / category), **filtered** by discovery state, and
+(name / rarity / level / value, each ascending or descending), **filtered**
+by discovery, category, rarity and craftability (faceted multi-select), and
 **searched** by name. Requires CoreLib.
 
 ## Requirements
 
 - Core Keeper game (verified on 1.2.1.4)
 - CoreLib mod (declared as dependency in ModBuilderSettings)
+
+## Localisation
+
+The mod UI is localised in **English and German** and follows the in-game
+language. Additional languages can be added as data (one entry per language in
+`unity/ItemChecklist/Localization/localization.yaml`, then rebuild).
 
 ## Building
 

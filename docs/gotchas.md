@@ -578,3 +578,27 @@ single-line labels away from the `AddNewLinesToLinesExceedingMaxWidth` code path
 **Also:** never use U+2026 (ellipsis `…`) or U+2014 (em-dash `—`) in term
 values — the `LocalizationGenerator` validates term strings and **fails the
 build** on either character. Use ASCII `...` and `-` instead.
+
+### Language-change re-bake must be deferred + world-guarded
+
+`I2.Loc.LocalizationManager.OnLocalizeEvent` fires **mid-`DoLocalizeAll`** —
+while I2's localization source is only half-rebuilt. Re-baking the item
+catalog synchronously inside the handler re-enters that half-rebuilt source
+and throws `NullReferenceException` (`PlayerController.GetObjectName` →
+`GetObjectName`), one NRE per language. Two-part fix in
+`ItemCatalogLocChangeHook`:
+
+1. **Defer.** The hook only sets a `RebakePending` flag. The actual re-bake
+   runs from `ItemChecklistMod.Update()` via
+   `ItemCatalogLocChangeHook.ProcessPending()` on the next tick — a stable
+   frame *after* `DoLocalizeAll` has finished (this also coalesces rapid
+   successive language switches into one re-bake).
+2. **World-guard.** Skip the re-bake unless `Manager.main.player != null`.
+   `ItemChecklistMod.Catalog` is a `new ItemCatalog()` from `Init()`, so it is
+   non-null **from mod load, not from a world load**. Without the guard, a
+   language switch on the main menu (no ECS world, no player) baked anyway and
+   NREd. Consume the pending flag even when the guard skips, so a stale flag
+   doesn't re-trigger a bad bake on a later tick.
+
+Verified: cycling languages in the main menu **and** switching EN<->DE
+in-world both re-bake cleanly, 0 NREs.

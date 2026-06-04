@@ -141,6 +141,7 @@ unity/ItemChecklist/
   SaveManagerActiveSelectHook.cs  Harmony patch for active-character resolution
   CharacterDataDiscoverySnapshot.cs  initial-state reader on OnAfterDeserialize
   PascalCaseSplitter.cs           pure utility (display-name fallback formatting)
+  Loc.cs                          localisation helpers (Loc.T / Loc.F) (Iter-11)
   InventoryOpenAutoHidePatch.cs   Harmony patch — auto-hide on Vanilla menu open (Iter-4)
   CursorScaleRestorePatch.cs      Harmony patch — restore cursor scale while open (Iter-9)
   InGameButtonHintsSuppressPatch.cs       Harmony patch — hide button-hint prompts (Iter-9)
@@ -162,16 +163,31 @@ unity/ItemChecklist/
     AscDescToggle.cs              ascending/descending direction toggle (Iter-7)
     SearchBar.cs                  TextInputField subclass — name search (Iter-8)
     ClearSearchButton.cs          clears the search field (Iter-8)
+    ItemCategory.cs               category taxonomy (ObjectType -> bucket) (Iter-10)
+    FacetedFilterWidget.cs        sectioned multi-select filter dropdown (Iter-10)
+    FacetCheckboxButton.cs        filter checkbox row button (Iter-10)
+    FacetToggleButton.cs          filter header toggle button (Iter-10)
+  Localization/
+    localization.yaml             source terms (one entry per language) (Iter-11)
+    Generated/                    build-generated .asset TextDataBlocks (gitignored)
   Prefabs/
     ItemChecklistWindow.prefab    window hierarchy
     ItemRow.prefab                row template (recycled by scroll list)
   Art/Bridge/                     placeholder sprites (gitignored; replace before publish)
   Editor/
-    ItemChecklist.Editor.asmdef   editor-only assembly for CLIBuildHelper
-    CLIBuildHelper.cs             -executeMethod entry point for build.sh
-    CLIPublishHelper.cs           -executeMethod entry point for upload.sh
+    ItemChecklist.Editor.asmdef   editor-only assembly for the CLI helpers
+    CLIBuildHelper.cs             -> core_keeper/utils/ (shared symlink, gitignored)
+    CLIPublishHelper.cs           -> core_keeper/utils/ (shared symlink, gitignored)
+    LocalizationGenerator.cs      -> core_keeper/utils/ (shared symlink, gitignored)
     SDK_SETUP.md                  SDK setup boilerplate (in-tree doc)
 ```
+
+The three Editor helpers (`CLIBuildHelper.cs`, `CLIPublishHelper.cs`,
+`LocalizationGenerator.cs`) are **not** committed in this repo. ItemChecklist is
+the pilot for the shared-helper pattern: the real files live in
+`core_keeper/utils/` (namespace `CoreKeeperModUtils`) and are symlinked into
+`Editor/` by `link.sh`, gated on `.envrc:USE_SHARED_EDITOR_HELPERS=1`. The
+symlinks (and `Localization/Generated/`) are therefore gitignored.
 
 **Naming patterns:**
 
