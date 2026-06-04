@@ -1,3 +1,4 @@
+using PugMod;
 using UnityEngine;
 
 namespace ItemChecklist.UI
@@ -14,8 +15,26 @@ namespace ItemChecklist.UI
         public SpriteRenderer rarityBorder;   // Iter-6: rarity frame, shown for Uncommon+
         public PugText levelText;    // Iter-10: right-aligned "Lv N" column ("—" if level 0 / undiscovered)
         public PugText valueText;    // Iter-10: right-aligned sell-value column ("—" if unsellable / undiscovered)
+        public SpriteRenderer coinIcon;   // Iter-10: Ancient Coin glyph beside the value (shown only when a value is shown)
 
         public const float RowHeight = 1.5f; // world units (~24px at 16 PPU)
+
+        // Ancient Coin icon, resolved once from the game database and shared by
+        // every row (the coin shown beside sell values).
+        private static Sprite s_coinSprite;
+        private static bool s_coinResolved;
+
+        private static Sprite CoinSprite()
+        {
+            if (!s_coinResolved)
+            {
+                s_coinResolved = true;
+                var info = PugDatabase.GetObjectInfo(ObjectID.AncientCoin, 0);
+                if (info != null)
+                    s_coinSprite = info.smallIcon != null ? info.smallIcon : info.icon;
+            }
+            return s_coinSprite;
+        }
 
         public void Bind(int objectId, Sprite iconSprite, string name, bool isDiscovered,
             Color rarityColor, Rarity rarity, int level, int sellValue)
@@ -58,6 +77,14 @@ namespace ItemChecklist.UI
                 levelText.Render(isDiscovered && level > 0 ? $"Lv {level}" : Dash);
             if (valueText != null)
                 valueText.Render(isDiscovered && sellValue > 0 ? sellValue.ToString() : Dash);
+
+            if (coinIcon != null)
+            {
+                bool showCoin = isDiscovered && sellValue > 0;
+                if (showCoin && coinIcon.sprite == null)
+                    coinIcon.sprite = CoinSprite();
+                coinIcon.enabled = showCoin && coinIcon.sprite != null;
+            }
         }
     }
 }
