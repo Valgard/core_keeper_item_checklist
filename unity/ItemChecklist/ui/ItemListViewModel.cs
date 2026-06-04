@@ -3,8 +3,6 @@ using System.Collections.Generic;
 
 namespace ItemChecklist.UI
 {
-    public enum DiscoveryFilter { All, Discovered, Undiscovered }
-
     /// <summary>
     /// Shared ordering view-model. Owns Order (display-position -> catalog-index),
     /// produced by collecting the visible catalog indices (Iter-7: all of them,
@@ -26,8 +24,15 @@ namespace ItemChecklist.UI
         private static SortMode s_mode = SortMode.Name;
         private static bool s_ascending = true;
 
+        // Faceted filter dimensions (Iter-10). OR within a set, AND across sets.
+        // Empty set = no constraint. Static: survive reopen + re-bake, reset on
+        // process restart (mirrors the sort state).
+        private static readonly HashSet<bool> s_discovery = new HashSet<bool>();      // true=discovered
+        private static readonly HashSet<Rarity> s_rarity  = new HashSet<Rarity>();
+        private static readonly HashSet<ItemCategory> s_category = new HashSet<ItemCategory>();
+        private static readonly HashSet<bool> s_craft = new HashSet<bool>();          // true=craftable
+
         private string searchText = "";
-        private DiscoveryFilter filter = DiscoveryFilter.All;
 
         public int[] Order { get; private set; } = Array.Empty<int>();
         public int Count => Order.Length;
@@ -56,26 +61,48 @@ namespace ItemChecklist.UI
 
         public void ToggleDirection() => Ascending = !Ascending;
 
-        // --- Iter-8 seam (kept at no-op defaults until Iter-8 wires the UI) ---
+        // --- Filter dimensions (Iter-10) ---
+        public bool DiscoverySelected(bool discovered) => s_discovery.Contains(discovered);
+        public bool RaritySelected(Rarity r)           => s_rarity.Contains(r);
+        public bool CategorySelected(ItemCategory c)   => s_category.Contains(c);
+        public bool CraftSelected(bool craftable)      => s_craft.Contains(craftable);
+
+        public void ToggleDiscovery(bool discovered) => Toggle(s_discovery, discovered);
+        public void ToggleRarity(Rarity r)           => Toggle(s_rarity, r);
+        public void ToggleCategory(ItemCategory c)   => Toggle(s_category, c);
+        public void ToggleCraft(bool craftable)      => Toggle(s_craft, craftable);
+
+        public int ActiveFilterCount =>
+            s_discovery.Count + s_rarity.Count + s_category.Count + s_craft.Count;
+
+        public void ClearAllFilters()
+        {
+            bool any = ActiveFilterCount > 0;
+            s_discovery.Clear(); s_rarity.Clear(); s_category.Clear(); s_craft.Clear();
+            if (any) Recompute();
+        }
+
+        private void Toggle<T>(HashSet<T> set, T value)
+        {
+            if (!set.Remove(value)) set.Add(value);
+            Recompute();
+        }
+
+        // --- Search (Iter-8) ---
         public string SearchText
         {
             get => searchText;
             set { if (value != searchText) { searchText = value ?? ""; Recompute(); } }
         }
-        public DiscoveryFilter Filter
-        {
-            get => filter;
-            set { if (value != filter) { filter = value; Recompute(); } }
-        }
 
         /// <summary>
-        /// True when the discovery filter or the name search is narrowing the view
+        /// True when any filter dimension or the name search is narrowing the view
         /// (i.e. the result set is a strict subset of the catalog for a reason the
         /// player chose). Distinct from `Count != catalog.Count`, which is only
         /// accidentally equivalent — a fully-completed "Discovered" filter has
         /// `Count == catalog.Count` yet is still filtered.
         /// </summary>
-        public bool IsFiltered => filter != DiscoveryFilter.All || searchText.Trim().Length > 0;
+        public bool IsFiltered => ActiveFilterCount > 0 || searchText.Trim().Length > 0;
 
         public void Refresh() => Recompute();
 
@@ -91,8 +118,10 @@ namespace ItemChecklist.UI
                 var e = catalog.GetByIndex(i);
                 bool isDisc = state.IsDiscovered(e.ObjectId, e.Variation);
 
-                if (filter == DiscoveryFilter.Discovered && !isDisc) continue;
-                if (filter == DiscoveryFilter.Undiscovered && isDisc) continue;
+                if (s_discovery.Count > 0 && !s_discovery.Contains(isDisc)) continue;
+                if (s_rarity.Count   > 0 && !s_rarity.Contains(e.Rarity))   continue;
+                if (s_category.Count > 0 && !s_category.Contains(ItemCategories.Of(e.ObjectType))) continue;
+                if (s_craft.Count    > 0 && !s_craft.Contains(e.IsCraftable)) continue;
                 if (needle.Length > 0)
                 {
                     if (e.DisplayName.ToLowerInvariant().IndexOf(needle, StringComparison.Ordinal) < 0)

@@ -35,7 +35,7 @@ namespace ItemChecklist.UI
         }
 
         private static readonly string[] SortLabels = { "Name", "Rarity", "Level", "Value" };
-        private static readonly string[] FilterLabels = { "All", "Discovered", "Undiscovered" };
+        private static readonly string[] DiscoveryLabels = { "All", "Discovered", "Undiscovered" };
 
         private static readonly MemberInfo MiScrollable = typeof(UIScrollWindow).GetMembersChecked().FirstOrDefault(x => x.GetNameChecked() == "_scrollable");
         private static readonly MemberInfo MiUpdateScrollHeight = typeof(UIScrollWindow).GetMembersChecked().FirstOrDefault(x => x.GetNameChecked() == "UpdateScrollHeight");
@@ -85,7 +85,18 @@ namespace ItemChecklist.UI
             if (sortDropdown != null)
                 sortDropdown.Configure(SortLabels, (int)model.Mode, i => { model.Mode = (SortMode)i; });
             if (filterDropdown != null)
-                filterDropdown.Configure(FilterLabels, (int)model.Filter, i => { model.Filter = (DiscoveryFilter)i; });
+            {
+                int sel = model.DiscoverySelected(true) && !model.DiscoverySelected(false) ? 1
+                        : model.DiscoverySelected(false) && !model.DiscoverySelected(true) ? 2 : 0;
+                filterDropdown.Configure(DiscoveryLabels, sel, i =>
+                {
+                    // rebuild the discovery set from the 3-state choice
+                    if (model.DiscoverySelected(true))  model.ToggleDiscovery(true);
+                    if (model.DiscoverySelected(false)) model.ToggleDiscovery(false);
+                    if (i == 1) model.ToggleDiscovery(true);
+                    else if (i == 2) model.ToggleDiscovery(false);
+                });
+            }
             if (searchBar != null)
                 searchBar.SyncFrom(model.SearchText);
         }
@@ -197,7 +208,11 @@ namespace ItemChecklist.UI
         {
             if (root == null || !root.activeSelf) return;
             RenderStatus();
-            Content?.RefreshVisible();   // no sort depends on discovery now; just repaint
+            var model = ItemChecklistMod.ListView;
+            if (model != null && (model.DiscoverySelected(true) || model.DiscoverySelected(false)))
+                model.Recompute();          // discovery filter active → membership may change
+            else
+                Content?.RefreshVisible();   // otherwise just repaint the affected row
         }
 
         /// <summary>
