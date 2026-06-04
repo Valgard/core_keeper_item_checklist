@@ -12,11 +12,13 @@ namespace ItemChecklist.UI
         public SpriteRenderer checkmark;     // empty checkbox, shown on every row
         public SpriteRenderer checkFill;     // requirement icon inside the box, discovered only
         public SpriteRenderer rarityBorder;   // Iter-6: rarity frame, shown for Uncommon+
+        public PugText levelText;    // Iter-10: right-aligned "Lv N" column ("—" if level 0 / undiscovered)
+        public PugText valueText;    // Iter-10: right-aligned sell-value column ("—" if unsellable / undiscovered)
 
         public const float RowHeight = 1.5f; // world units (~24px at 16 PPU)
 
         public void Bind(int objectId, Sprite iconSprite, string name, bool isDiscovered,
-            Color rarityColor, Rarity rarity)
+            Color rarityColor, Rarity rarity, int level, int sellValue)
         {
             if (isDiscovered)
             {
@@ -48,6 +50,14 @@ namespace ItemChecklist.UI
                 rarityBorder.color = rarityColor;
                 rarityBorder.enabled = rarity >= Rarity.Uncommon;   // Poor + Common: no border
             }
+
+            // Iter-10: Level + Value columns. Undiscovered = "—"/"—" (no spoiler).
+            // Level 0 and unsellable (sellValue < 0) render "—".
+            const string Dash = "—";
+            if (levelText != null)
+                levelText.Render(isDiscovered && level > 0 ? $"Lv {level}" : Dash);
+            if (valueText != null)
+                valueText.Render(isDiscovered && sellValue >= 0 ? sellValue.ToString() : Dash);
         }
     }
 }

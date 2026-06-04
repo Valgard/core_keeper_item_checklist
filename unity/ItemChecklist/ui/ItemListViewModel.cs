@@ -161,9 +161,10 @@ namespace ItemChecklist.UI
                     c = a.Level.CompareTo(b.Level);
                     break;
                 case SortMode.Value:
-                    // -1 (unsellable) coerced to 0 so unsellable items cluster at the
-                    // bottom in descending / top in ascending, consistently.
-                    c = ValueKey(a).CompareTo(ValueKey(b));
+                    // Raw sellValue: -1 (unsellable) sorts below 0 and positive
+                    // values — unsellable items cluster at the low end (first
+                    // ascending, last descending). Unsellable is NOT value 0.
+                    c = a.SellValue.CompareTo(b.SellValue);
                     break;
                 default: // SortMode.Name
                     c = 0;
@@ -179,6 +180,5 @@ namespace ItemChecklist.UI
             return ia.CompareTo(ib);   // final tiebreak: total order, stable under Reverse()
         }
 
-        private static int ValueKey(ItemCatalog.Entry e) => e.SellValue < 0 ? 0 : e.SellValue;
     }
 }

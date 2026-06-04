@@ -173,7 +173,7 @@ namespace ItemChecklist.UI
                     entry.Rarity, useDefaultColorForCommon: true, defaultColor: _defaultLabelColor);
                 row.Bind(entry.ObjectId, entry.Icon, entry.DisplayName,
                     state.IsDiscovered(entry.ObjectId, entry.Variation),
-                    rarityColor, entry.Rarity);
+                    rarityColor, entry.Rarity, entry.Level, entry.SellValue);
             }
         }
 
