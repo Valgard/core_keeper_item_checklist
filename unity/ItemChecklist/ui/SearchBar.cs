@@ -27,6 +27,13 @@ namespace ItemChecklist.UI
         }
 
         /// <summary>
+        /// Update the hint (placeholder) text shown when the field is empty.
+        /// Forwards to the base class's inherited <c>hintText</c> PugText so the
+        /// hint re-localises whenever the window re-wires controls.
+        /// </summary>
+        public void SetHint(string text) { if (hintText != null) hintText.Render(text); }
+
+        /// <summary>
         /// Set the field text to <paramref name="text"/> WITHOUT triggering a push
         /// back to the model. Used by the window to sync the field to the model's
         /// current SearchText on open and after a re-bake (when a fresh

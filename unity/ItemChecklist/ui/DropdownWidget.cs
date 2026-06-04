@@ -68,7 +68,10 @@ namespace ItemChecklist.UI
         private void RenderHeader()
         {
             if (selectedLabel != null && _selected >= 0 && _selected < _labels.Length)
+            {
+                selectedLabel.maxWidth = 0f;   // no word-wrap: CK PugFont wrap IndexOutOfRange-crashes on long (localised) labels
                 selectedLabel.Render(_labels[_selected]);
+            }
         }
 
         /// <summary>Lay out the NON-selected options flush under the header.</summary>
@@ -83,7 +86,7 @@ namespace ItemChecklist.UI
                 btn.index = opt;                          // clicking selects this option
                 if (!btn.gameObject.activeSelf) btn.gameObject.SetActive(true);
                 btn.transform.localPosition = new Vector3(0f, -((pos + 1) * rowSpacing), 0f);
-                if (_rowLabels[pos] != null) _rowLabels[pos].Render(_labels[opt]);
+                if (_rowLabels[pos] != null) { _rowLabels[pos].maxWidth = 0f; _rowLabels[pos].Render(_labels[opt]); }
                 if (_rowSelectedMarks[pos] != null) _rowSelectedMarks[pos].enabled = false;
                 pos++;
             }

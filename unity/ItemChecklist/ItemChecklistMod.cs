@@ -41,7 +41,7 @@ namespace ItemChecklist
         // toggle action each frame.
         private static Player rewiredPlayer;
 
-        private const string ToggleActionName = "ItemChecklist.Toggle";
+        private const string ToggleActionName = "ItemChecklist-ToggleChecklist";
 
         // Last character name we applied a snapshot for. Reset when
         // Manager.main.player goes back to null (main menu) so the next

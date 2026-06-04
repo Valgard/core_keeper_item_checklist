@@ -105,7 +105,11 @@ namespace ItemChecklist.UI
         private void RenderHeader(Func<int> activeCount)
         {
             int n = activeCount != null ? activeCount() : 0;
-            if (headerLabel != null) headerLabel.Render(n > 0 ? $"Filter ({n})" : "Filter");
+            if (headerLabel != null)
+            {
+                headerLabel.maxWidth = 0f;   // no word-wrap: CK PugFont wrap IndexOutOfRange-crashes on long (localised) labels, aborting ShowUI
+                headerLabel.Render(n > 0 ? ItemChecklist.Loc.F("ItemChecklist-Filters/HeaderCount", n) : ItemChecklist.Loc.T("ItemChecklist-Filters/Header"));
+            }
         }
 
         /// <summary>Lay out section headers + checkbox/action rows top-to-bottom.</summary>
@@ -127,6 +131,7 @@ namespace ItemChecklist.UI
                         var ht = _headerPool[headerIdx];
                         ht.transform.parent.localPosition = new Vector3(0f, -(pos * rowSpacing), 0f);
                         if (!ht.transform.parent.gameObject.activeSelf) ht.transform.parent.gameObject.SetActive(true);
+                        ht.maxWidth = 0f;         // no word-wrap (see RenderHeader)
                         ht.Render(lastSection);   // colour set on the headerTemplate PugText style in the prefab (gray)
                         headerIdx++; pos++;
                     }
@@ -150,7 +155,10 @@ namespace ItemChecklist.UI
                 btn.transform.localPosition = new Vector3(0f, -(pos * rowSpacing), 0f);
                 var label = btn.transform.Find("Label")?.GetComponent<PugText>();
                 if (label != null)
+                {
+                    label.maxWidth = 0f;   // no word-wrap (see RenderHeader)
                     label.Render((action ? "" : "  ") + _members[m].label);   // indent filter members
+                }
                 if (!action) btn.SetChecked(_members[m].isOn());   // action rows carry no checkbox state
                 pos++;
             }

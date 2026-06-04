@@ -74,7 +74,7 @@ namespace ItemChecklist.UI
             // Level 0 and unsellable (sellValue < 0) render "—".
             const string Dash = "—";
             if (levelText != null)
-                levelText.Render(isDiscovered && level > 0 ? $"Lv {level}" : Dash);
+                levelText.Render(isDiscovered && level > 0 ? ItemChecklist.Loc.F("ItemChecklist-General/Level", level) : Dash);
             if (valueText != null)
                 valueText.Render(isDiscovered && sellValue > 0 ? sellValue.ToString() : Dash);
 

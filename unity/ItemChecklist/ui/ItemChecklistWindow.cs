@@ -34,7 +34,13 @@ namespace ItemChecklist.UI
             }
         }
 
-        private static readonly string[] SortLabels = { "Name", "Rarity", "Level", "Value" };
+        private static string[] SortLabels => new[]
+        {
+            Loc.T("ItemChecklist-Sorters/Name"),
+            Loc.T("ItemChecklist-Sorters/Rarity"),
+            Loc.T("ItemChecklist-Sorters/Level"),
+            Loc.T("ItemChecklist-Sorters/Value"),
+        };
 
         private static readonly MemberInfo MiScrollable = typeof(UIScrollWindow).GetMembersChecked().FirstOrDefault(x => x.GetNameChecked() == "_scrollable");
         private static readonly MemberInfo MiUpdateScrollHeight = typeof(UIScrollWindow).GetMembersChecked().FirstOrDefault(x => x.GetNameChecked() == "UpdateScrollHeight");
@@ -88,22 +94,25 @@ namespace ItemChecklist.UI
                 var members = new System.Collections.Generic.List<(string, string, System.Func<bool>, System.Action)>
                 {
                     // Clear-all pseudo-row (empty section → no header rendered).
-                    ("", "Clear all", () => false, () => facetedFilter.ClearAll()),
+                    ("", Loc.T("ItemChecklist-Filters/ClearAll"), () => false, () => facetedFilter.ClearAll()),
 
-                    ("Discovery", "Discovered",   () => model.DiscoverySelected(true),  () => model.ToggleDiscovery(true)),
-                    ("Discovery", "Undiscovered", () => model.DiscoverySelected(false), () => model.ToggleDiscovery(false)),
+                    (Loc.T("ItemChecklist-Filters/SecDiscovery"), Loc.T("ItemChecklist-Filters/Discovered"),   () => model.DiscoverySelected(true),  () => model.ToggleDiscovery(true)),
+                    (Loc.T("ItemChecklist-Filters/SecDiscovery"), Loc.T("ItemChecklist-Filters/Undiscovered"), () => model.DiscoverySelected(false), () => model.ToggleDiscovery(false)),
                 };
                 foreach (var r in RarityFilterTiers())
-                    members.Add(("Rarity", RarityLabel(r), () => model.RaritySelected(r), () => model.ToggleRarity(r)));
+                    members.Add((Loc.T("ItemChecklist-Filters/SecRarity"), RarityLabel(r), () => model.RaritySelected(r), () => model.ToggleRarity(r)));
                 foreach (var c in ItemCategories.All)
-                    members.Add(("Category", CategoryLabel(c), () => model.CategorySelected(c), () => model.ToggleCategory(c)));
-                members.Add(("Craftable", "Craftable",     () => model.CraftSelected(true),  () => model.ToggleCraft(true)));
-                members.Add(("Craftable", "Not craftable", () => model.CraftSelected(false), () => model.ToggleCraft(false)));
+                    members.Add((Loc.T("ItemChecklist-Filters/SecCategory"), CategoryLabel(c), () => model.CategorySelected(c), () => model.ToggleCategory(c)));
+                members.Add((Loc.T("ItemChecklist-Filters/SecCraftable"), Loc.T("ItemChecklist-Filters/Craftable"),     () => model.CraftSelected(true),  () => model.ToggleCraft(true)));
+                members.Add((Loc.T("ItemChecklist-Filters/SecCraftable"), Loc.T("ItemChecklist-Filters/NotCraftable"), () => model.CraftSelected(false), () => model.ToggleCraft(false)));
 
                 facetedFilter.Configure(members, () => model.ActiveFilterCount, () => model.ClearAllFilters());
             }
             if (searchBar != null)
+            {
                 searchBar.SyncFrom(model.SearchText);
+                searchBar.SetHint(Loc.T("ItemChecklist-General/SearchHint"));
+            }
         }
 
         public void HideUI()
@@ -200,7 +209,7 @@ namespace ItemChecklist.UI
         private string FormatShown()
         {
             var model = ItemChecklistMod.ListView;
-            return (model != null && model.IsFiltered) ? $"{model.Count} shown" : "";
+            return (model != null && model.IsFiltered) ? Loc.F("ItemChecklist-General/Shown", model.Count) : "";
         }
 
         private void RenderStatus()
@@ -234,6 +243,7 @@ namespace ItemChecklist.UI
             // and the search field re-syncs. Order matters: PopulateContent must run first so its
             // Recompute's OnResultsChanged isn't double-handled before the subscription is (re)set.
             WireControls();
+            RenderStatus();
         }
 
         /// <summary>
@@ -262,16 +272,8 @@ namespace ItemChecklist.UI
         private static Rarity[] RarityFilterTiers() => new[]
             { Rarity.Common, Rarity.Uncommon, Rarity.Rare, Rarity.Epic, Rarity.Legendary };
 
-        private static string RarityLabel(Rarity r) => r.ToString();   // Iter-11 localises
+        private static string RarityLabel(Rarity r) => Loc.T($"ItemChecklist-Rarities/{r}");
 
-        private static string CategoryLabel(ItemCategory c)
-        {
-            switch (c)
-            {
-                case ItemCategory.ArmorAccessories: return "Armor & Accessories";
-                case ItemCategory.KeyItems:         return "Key Items";
-                default:                            return c.ToString();
-            }
-        }
+        private static string CategoryLabel(ItemCategory c) => Loc.T($"ItemChecklist-Categories/{c}");
     }
 }
