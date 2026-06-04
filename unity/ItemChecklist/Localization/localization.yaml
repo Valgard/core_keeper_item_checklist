@@ -1,0 +1,57 @@
+# ItemChecklist localisation source (Iter-11). Generated into native
+# TextDataBlock assets at build time by utils/LocalizationGenerator.cs.
+# ASCII rule: never use the real ellipsis U+2026 (CK thinTiny font crashes —
+# docs/gotchas.md) or em-dash U+2014; use '...' and '-'. German umlauts are fine.
+# MT later = add a language key (fr/it/ja/ko/ru/es/uk/zh-ch/zh-tw/th/pt-br).
+ItemChecklist-General:
+  SearchHint:
+    hint: "Placeholder text in the search input box"
+    en: "Search..."
+    de: "Suchen..."
+  Shown:
+    hint: "Footer left label. {0} = count of items visible after filtering."
+    en: "{0} shown"
+    de: "{0} angezeigt"
+  Level:
+    hint: "Per-row level column. {0} = level number."
+    en: "Lv {0}"
+    de: "St. {0}"
+ItemChecklist-Sorters:
+  Name:   { en: "Name",   de: "Name" }
+  Rarity: { en: "Rarity", de: "Seltenheit" }
+  Level:  { en: "Level",  de: "Stufe" }
+  Value:  { en: "Value",  de: "Wert" }
+ItemChecklist-Filters:
+  Header:       { en: "Filter",        de: "Filter" }
+  HeaderCount:  { en: "Filter ({0})",  de: "Filter ({0})" }
+  ClearAll:     { en: "Clear all",     de: "Alle löschen" }
+  SecDiscovery: { en: "Discovery",     de: "Entdeckung" }
+  SecRarity:    { en: "Rarity",        de: "Seltenheit" }
+  SecCategory:  { en: "Category",      de: "Kategorie" }
+  SecCraftable: { en: "Craftable",     de: "Herstellbar" }
+  Discovered:   { en: "Discovered",    de: "Entdeckt" }
+  Undiscovered: { en: "Undiscovered",  de: "Unentdeckt" }
+  Craftable:    { en: "Craftable",     de: "Herstellbar" }
+  NotCraftable: { en: "Not craftable", de: "Nicht herstellbar" }
+ItemChecklist-Rarities:
+  Common:    { en: "Common",    de: "Gewöhnlich" }
+  Uncommon:  { en: "Uncommon",  de: "Ungewöhnlich" }
+  Rare:      { en: "Rare",      de: "Selten" }
+  Epic:      { en: "Epic",      de: "Episch" }
+  Legendary: { en: "Legendary", de: "Legendär" }
+ItemChecklist-Categories:
+  Weapons:          { en: "Weapons",             de: "Waffen" }
+  ArmorAccessories: { en: "Armor & Accessories", de: "Rüstung & Accessoires" }
+  Tools:            { en: "Tools",               de: "Werkzeuge" }
+  Food:             { en: "Food",                de: "Nahrung" }
+  Placeables:       { en: "Placeables",          de: "Platzierbares" }
+  Materials:        { en: "Materials",           de: "Materialien" }
+  Valuables:        { en: "Valuables",           de: "Wertgegenstände" }
+  KeyItems:         { en: "Key Items",           de: "Schlüsselobjekte" }
+  Instruments:      { en: "Instruments",         de: "Instrumente" }
+  Other:            { en: "Other",               de: "Sonstiges" }
+ControlMapper:
+  ItemChecklist-ToggleChecklistPC:
+    hint: "Keybind name shown in the game Controls menu."
+    en: "Item Checklist: Toggle"
+    de: "Item-Checkliste: Umschalten"

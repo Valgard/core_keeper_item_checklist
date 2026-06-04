@@ -40,3 +40,12 @@ docs/superpowers/
 unity/ItemChecklist/Art/Bridge/
 unity/ItemChecklist/Art/Bridge.meta
 
+# Iter-11: generated localisation assets (regenerated every build from
+# localization.yaml) + the shared-helper symlinks link.sh creates.
+unity/ItemChecklist/Localization/Generated/
+unity/ItemChecklist/Localization/Generated.meta
+unity/ItemChecklist/Editor/CLIBuildHelper.cs
+unity/ItemChecklist/Editor/CLIBuildHelper.cs.meta
+unity/ItemChecklist/Editor/LocalizationGenerator.cs
+unity/ItemChecklist/Editor/LocalizationGenerator.cs.meta
+
