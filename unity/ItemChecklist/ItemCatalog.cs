@@ -49,9 +49,13 @@ namespace ItemChecklist
             public readonly string ModOrigin;   // empty string = vanilla
             public readonly Rarity Rarity;      // CK ObjectInfo.rarity (Poor..Legendary)
             public readonly ObjectType ObjectType;  // CK ObjectInfo.objectType (Category sort key)
+            public readonly int Level;          // CK ObjectInfo.level
+            public readonly int SellValue;      // CK ObjectInfo.sellValue (-1 = unsellable)
+            public readonly bool IsCraftable;   // ObjectInfo.requiredObjectsToCraft non-empty
 
             public Entry(int objectId, int variation, string displayName, Sprite icon,
-                string modOrigin, Rarity rarity, ObjectType objectType)
+                string modOrigin, Rarity rarity, ObjectType objectType,
+                int level, int sellValue, bool isCraftable)
             {
                 ObjectId = objectId;
                 Variation = variation;
@@ -60,6 +64,9 @@ namespace ItemChecklist
                 ModOrigin = modOrigin ?? string.Empty;
                 Rarity = rarity;
                 ObjectType = objectType;
+                Level = level;
+                SellValue = sellValue;
+                IsCraftable = isCraftable;
             }
         }
 
@@ -121,6 +128,9 @@ namespace ItemChecklist
                 var iconCache        = new Dictionary<long, Sprite>();
                 var rarityCache      = new Dictionary<long, Rarity>();
                 var objectTypeCache  = new Dictionary<long, ObjectType>();
+                var levelCache       = new Dictionary<long, int>();
+                var sellValueCache   = new Dictionary<long, int>();
+                var craftableCache   = new Dictionary<long, bool>();
 
                 foreach (var od in PugDatabase.objectsByType.Keys)
                 {
@@ -189,6 +199,9 @@ namespace ItemChecklist
                     iconCache[key] = info.smallIcon != null ? info.smallIcon : info.icon;
                     rarityCache[key] = info.rarity;
                     objectTypeCache[key] = info.objectType;
+                    levelCache[key]      = info.level;
+                    sellValueCache[key]  = info.sellValue;
+                    craftableCache[key]  = info.requiredObjectsToCraft != null && info.requiredObjectsToCraft.Count > 0;
                 }
 
                 // ─── Loop 2: α-enumeration for Cooked-Food permutations ─────────
@@ -230,17 +243,20 @@ namespace ItemChecklist
                     // 3 tier-variants per pair, same variation, different objectIDs.
                     AddCookedEntry(
                         new ObjectDataCD { objectID = baseFamily, variation = variation },
-                        localizedNames, unlocalizedNames, iconCache, rarityCache, objectTypeCache, accepted);
+                        localizedNames, unlocalizedNames, iconCache, rarityCache, objectTypeCache,
+                        levelCache, sellValueCache, craftableCache, accepted);
                     if (tierMap.TryGetValue(baseFamily, out var tiers))
                     {
                         if (tiers.rare != ObjectID.None)
                             AddCookedEntry(
                                 new ObjectDataCD { objectID = tiers.rare, variation = variation },
-                                localizedNames, unlocalizedNames, iconCache, rarityCache, objectTypeCache, accepted);
+                                localizedNames, unlocalizedNames, iconCache, rarityCache, objectTypeCache,
+                                levelCache, sellValueCache, craftableCache, accepted);
                         if (tiers.epic != ObjectID.None)
                             AddCookedEntry(
                                 new ObjectDataCD { objectID = tiers.epic, variation = variation },
-                                localizedNames, unlocalizedNames, iconCache, rarityCache, objectTypeCache, accepted);
+                                localizedNames, unlocalizedNames, iconCache, rarityCache, objectTypeCache,
+                                levelCache, sellValueCache, craftableCache, accepted);
                     }
                 }
 
@@ -263,7 +279,8 @@ namespace ItemChecklist
                     }
                     string modOrigin = ResolveModOrigin(od, modIdToName);
                     list.Add(new Entry((int)od.objectID, od.variation, finalName, iconCache[key],
-                        modOrigin, rarityCache[key], objectTypeCache[key]));
+                        modOrigin, rarityCache[key], objectTypeCache[key],
+                        levelCache[key], sellValueCache[key], craftableCache[key]));
                 }
 
                 entries = list
@@ -396,6 +413,9 @@ namespace ItemChecklist
             Dictionary<long, Sprite> iconCache,
             Dictionary<long, Rarity> rarityCache,
             Dictionary<long, ObjectType> objectTypeCache,
+            Dictionary<long, int> levelCache,
+            Dictionary<long, int> sellValueCache,
+            Dictionary<long, bool> craftableCache,
             List<ObjectDataCD> accepted)
         {
             var info = PugDatabase.GetObjectInfo(od.objectID, od.variation);
@@ -417,6 +437,9 @@ namespace ItemChecklist
             iconCache[key] = info.smallIcon != null ? info.smallIcon : info.icon;
             rarityCache[key] = info.rarity;
             objectTypeCache[key] = info.objectType;
+            levelCache[key]      = info.level;
+            sellValueCache[key]  = info.sellValue;
+            craftableCache[key]  = info.requiredObjectsToCraft != null && info.requiredObjectsToCraft.Count > 0;
         }
     }
 }
