@@ -65,6 +65,7 @@ namespace ItemChecklist
             {
                 ItemChecklistMod.Catalog.Bake();
                 ItemChecklistMod.ListView = new ItemChecklist.UI.ItemListViewModel(ItemChecklistMod.Catalog, DiscoveredState.Instance);
+                ItemChecklist.UI.ItemChecklistHud.Instance?.Refresh();   // show the total as soon as the catalog is baked
             }
             catch (NullReferenceException ex)
             {

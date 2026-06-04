@@ -65,6 +65,7 @@ namespace ItemChecklist
                 ItemChecklistMod.Catalog.Bake();
                 ItemChecklistMod.ListView = new ItemChecklist.UI.ItemListViewModel(ItemChecklistMod.Catalog, DiscoveredState.Instance);
                 ItemChecklistWindow.Instance?.RebindRows();
+                ItemChecklistHud.Instance?.Refresh();   // re-render counter after a language-change re-bake
             }
             catch (Exception ex)
             {

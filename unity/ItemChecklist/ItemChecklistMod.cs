@@ -36,6 +36,12 @@ namespace ItemChecklist
         public static AssetBundle AssetBundle { get; private set; }
         public static LoadedMod ModInfo { get; private set; }
 
+        // Always-on HUD counter prefab, captured in ModObjectLoaded and
+        // instantiated lazily in Update once the UIManager exists. NOT routed
+        // through CoreLib's modal RegisterModUI (which hides on
+        // HideAllInventoryAndCraftingUI — the opposite of an always-on HUD).
+        private static GameObject hudPrefab;
+
         // Rewired player captured via ControlMappingModule.rewiredStart
         // (Rewired is not ready at EarlyInit). Used to poll the bound
         // toggle action each frame.
@@ -103,13 +109,31 @@ namespace ItemChecklist
         {
             if (obj is GameObject go)
             {
-                UserInterfaceModule.RegisterModUI(go);
+                // The HUD counter is non-modal — capture it for our own
+                // lazy instantiation in Update; everything else is a modal
+                // window registered with CoreLib as before.
+                if (go.name == "ItemChecklistHUD")
+                    hudPrefab = go;
+                else
+                    UserInterfaceModule.RegisterModUI(go);
             }
         }
         public void Shutdown() { }
 
         public void Update()
         {
+            // Instantiate the always-on HUD counter once the UIManager and its
+            // HUD hierarchy exist. Parent under chestInventoryUI's parent — the
+            // in-game HUD root (where CK's HUD lives and CoreLib mounts modal
+            // UIs). The instance's Awake sets ItemChecklistHud.Instance.
+            if (hudPrefab != null
+                && ItemChecklist.UI.ItemChecklistHud.Instance == null
+                && Manager.ui != null
+                && Manager.ui.chestInventoryUI != null)
+            {
+                Object.Instantiate(hudPrefab, Manager.ui.chestInventoryUI.transform.parent);
+            }
+
             // Deferred language-change re-bake (set by ItemCatalogLocChangeHook;
             // run here, post-DoLocalizeAll, to avoid the mid-localize GetObjectName NRE).
             ItemCatalogLocChangeHook.ProcessPending();
