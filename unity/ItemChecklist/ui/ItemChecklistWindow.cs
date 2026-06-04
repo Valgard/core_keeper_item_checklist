@@ -196,14 +196,11 @@ namespace ItemChecklist.UI
 
         private string FormatTitle()
         {
+            // Footer counter delegates to the shared formatter so it cannot drift
+            // from the HUD counter (Iter-11.5). Null/empty catalog still yields "0 / 0".
             var catalog = ItemChecklistMod.Catalog;
-            var state = DiscoveredState.Instance;
-            if (catalog == null || catalog.Count == 0)
-                return "0 / 0";
-            float percent = 100f * state.Count / catalog.Count;
-            // Iter-9 footer: right-aligned discovered/total counter only. The "N shown"
-            // filtered-count is a separate left-aligned label (FormatShown / shownLabel).
-            return $"{state.Count} / {catalog.Count} ({percent:F1}%)";
+            int total = (catalog == null) ? 0 : catalog.Count;
+            return ProgressFormat.Counter(DiscoveredState.Instance.Count, total);
         }
 
         private string FormatShown()
