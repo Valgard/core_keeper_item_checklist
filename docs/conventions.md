@@ -142,6 +142,7 @@ unity/ItemChecklist/
   CharacterDataDiscoverySnapshot.cs  initial-state reader on OnAfterDeserialize
   PascalCaseSplitter.cs           pure utility (display-name fallback formatting)
   Loc.cs                          localisation helpers (Loc.T / Loc.F) (Iter-11)
+  ProgressFormat.cs               shared discovered/total counter string — footer + HUD (Iter-11.5)
   InventoryOpenAutoHidePatch.cs   Harmony patch — auto-hide on Vanilla menu open (Iter-4)
   CursorScaleRestorePatch.cs      Harmony patch — restore cursor scale while open (Iter-9)
   InGameButtonHintsSuppressPatch.cs       Harmony patch — hide button-hint prompts (Iter-9)
@@ -153,6 +154,7 @@ unity/ItemChecklist/
   ItemChecklist.asmdef            runtime assembly definition
   ui/
     ItemChecklistWindow.cs        IModUI implementation (UIelement subclass)
+    ItemChecklistHud.cs           non-modal always-on top-right HUD counter (UIelement) (Iter-11.5)
     ItemRow.cs                    row MonoBehaviour (Bind API)
     ItemChecklistContent.cs       IScrollable implementation (viewport recycler)
     ItemListViewModel.cs          order/filter/search view model (Iter-7/8)
@@ -172,6 +174,7 @@ unity/ItemChecklist/
     Generated/                    build-generated .asset TextDataBlocks (gitignored)
   Prefabs/
     ItemChecklistWindow.prefab    window hierarchy
+    ItemChecklistHUD.prefab       always-on HUD counter (checkbox icon + PugText) (Iter-11.5)
     ItemRow.prefab                row template (recycled by scroll list)
   Art/Bridge/                     placeholder sprites (gitignored; replace before publish)
   Editor/

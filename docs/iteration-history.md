@@ -65,7 +65,7 @@ filter/search seam (`DiscoveryFilter`, `SearchText`) at no-op defaults for
 Iter-8. `ItemCatalog.Entry` gained `ObjectType ObjectType` (via a new
 `objectTypeCache`) for the Category comparator. `ItemChecklistMod.ListView` is
 (re-)constructed after each bake. Full mechanism in `docs/architecture.md §
-List View-Model & Sorting (Iter-7)`. **Iter-7.1 (DONE):** catalog-completeness
+List View-Model, Sorting & Filtering (Iter-7 / Iter-8 / Iter-10)`. **Iter-7.1 (DONE):** catalog-completeness
 fix — `ItemCatalog.Bake` Loop 1 blanket-excluded `ObjectType.NonUsable` as
 "garbage", but CK files raw materials (ores, bars, raw wood, scrap) under that
 type, so they were silently missing. Replaced with a narrow guard that drops a

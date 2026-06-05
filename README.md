@@ -51,10 +51,10 @@ not ship in the published mod.
 
 - **Placeholder art.** The rarity border and scrollbar track/handle use
   placeholder sprites (a tinted white 9-slice frame, Item-Browser-derived
-  scrollbar art). Real pixel-art is deferred to Iter-12.
+  scrollbar art). Real pixel-art is deferred to Iter-12 (see `docs/roadmap.md`).
 - **No per-variation tracking.** Each item family is tracked once; colour /
   skin / state variants do not get their own row (deferred — see Iter-17 in
-  `CLAUDE.md`).
+  `docs/roadmap.md`).
 
 ## Documentation
 

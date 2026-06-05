@@ -633,3 +633,19 @@ on `isInGame && Manager.main.player != null && !Manager.ui.isAnyInventoryShowing
 !Manager.menu.IsAnyMenuActive()`). The `player != null` term also keeps the HUD off
 the **world-load screen** (`isInGame` is already true there — the same gap as the
 Iter-15 F1 guard).
+
+### Diagnosing "active but invisible" CK UI — log `isVisible` + `z` + `layer`
+When a UI element is active, on-screen and full-alpha but nothing shows, log
+three things on the element's `SpriteRenderer` to split "culled by camera" from
+"drawn but occluded": **`sr.isVisible`**, **`sr.transform.position.z`** (world Z
+vs the uiCamera frustum), and **`sr.gameObject.layer`** (HUD 27 vs UI 5).
+`isVisible == false` ⇒ **culled** — wrong Unity layer or outside the frustum
+(not occlusion); `isVisible == true` but unseen ⇒ sorting/occlusion. This recipe
+is exactly how the two render bugs above (wrong layer, wrong z) were resolved in
+two builds instead of guessing.
+
+### `PugText.textString` is a serialized field, not a public C# property
+`textString` exists in the prefab YAML (`PugText`'s serialized text) but is **not**
+a public C# property — referencing it from mod code is a `CS1061` compile error.
+Set the text at runtime via `PugText.Render(string)` (as `ItemChecklistHud.Refresh`
+does), never by assigning `textString`.
