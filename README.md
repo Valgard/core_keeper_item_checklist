@@ -49,7 +49,7 @@ alongside it.
 
 The mod UI is localised in **English and German** and follows the in-game
 language. Additional languages can be added as data — add one entry per language
-in `unity/ItemChecklist/Localization/localization.yaml` and rebuild.
+in `localization/localization.yaml` and rebuild.
 
 ## Credits
 
