@@ -174,3 +174,31 @@ via `AssetDatabase.AssetPathToGUID` at generation time (not copied from IB), and
 `PugFont` crashes on labels exceeding `maxWidth > 0f` with longer translations →
 set `PugText.maxWidth = 0f` on all localised single-line labels. Full details in
 `docs/gotchas.md § Localisation (Iter-11)`.
+
+**Iter-11.5 (DONE):** always-on HUD discovery counter — the window footer's
+`N / M (p.p%)` mirrored as a permanent top-right HUD readout (above the minimap),
+with a checkbox-framed icon (`ui_slot_toggled_border` box + `ui_icon_requirement`
+tick at 0.7 scale, like a discovered list row). This is the mod's first
+**non-modal** UI: a dedicated `ItemChecklistHud : UIelement` in its own
+`Prefabs/ItemChecklistHUD.prefab`, instantiated directly by `ItemChecklistMod`
+(routed by GameObject name in `ModObjectLoaded`, **not** via CoreLib
+`RegisterModUI`) and parented under `chestInventoryUI.transform.parent`
+(`IngameUI`). The counter string comes from a new shared `ProgressFormat.Counter`
+helper that the window footer (`FormatTitle`) also adopts — one source of truth,
+no drift. Live refresh via `DiscoveredState.Changed` plus both bake hooks
+(world-load + loc-change). Three hard-won in-game findings (see
+`docs/gotchas.md § HUD Counter (Iter-11.5)`): **(1)** the renderers must sit on
+the **HUD Unity layer (27)** — on layer 5 (UI) the uiCamera never draws them during
+plain gameplay (the modal window only renders because CoreLib's open-path activates
+it); **(2)** content must sit at local **z=10** (world z≈0), the plane CoreLib
+positions modal UIs to via `initialInterfacePosition` — at the parent origin
+(world z=-10) it is outside the uiCamera frustum (`SpriteRenderer.isVisible ==
+false`); **(3)** `Manager.ui.CalcGameplayUITargetScaleMultiplier()` (CK's "native
+HUD idiom") returns `(0,0,0)` for a mod HUD here, so visibility is explicit:
+`isInGame && Manager.main.player != null` (the player term suppresses the
+world-load screen — the Iter-15 bug class) `&& !Manager.ui.isAnyInventoryShowing
+&& !Manager.menu.IsAnyMenuActive()` (the CoreLib-patched aggregate
+`isAnyInventoryShowing` covers inventory, crafting **and** the checklist window).
+Bonus: HUD-layer membership means CK's own `CameraManager.ShowHUD(false)` culls the
+counter together with the rest of the gameplay HUD, for free. Full mechanism in
+`docs/architecture.md § HUD Counter (Iter-11.5)`.

@@ -6,6 +6,8 @@ Frozen 2026-06-04. The backlog of planned iterations (Iter-12 onward).
 - **Iter-11 — DONE** (see `docs/iteration-history.md`). Note: implemented via
   native TextDataBlock generation + `LocalizationGenerator.cs`, **not** CoreLib
   `LocalizationModule` (which is deprecated).
+- **Iter-11.5 — DONE** (see `docs/iteration-history.md`). Always-on top-right HUD
+  discovery counter (non-modal `UIelement`; HUD-layer + explicit visibility).
 - **Iter-12 -- real pixel-art sprites.** Replace the placeholder rarity border
   (white 9-slice hollow frame) + scrollbar track/handle sprites.
 - **Iter-13 -- `DropdownWidget` prefab extraction.** Extract the widget into a

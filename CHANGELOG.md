@@ -8,6 +8,12 @@ describe what shipped per release, not every commit.
 
 ### Added
 
+- **Always-on HUD counter.** The discovered/total counter from the checklist
+  window footer now also appears as a permanent readout in the top-right corner
+  (above the minimap) during gameplay: a checkbox-framed icon plus
+  `N / M (p.p%)`. It hides automatically while the inventory, a menu, or the
+  checklist window is open, and during the world-load screen, and updates live as
+  you discover items.
 - **Localisation (English + German).** All checklist UI text — search hint,
   sort modes, the faceted filter (section headers, rarity, category, discovery
   and craftable options, "Clear all"), the footer "N shown" counter, the per-row

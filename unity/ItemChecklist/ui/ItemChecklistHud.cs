@@ -9,12 +9,15 @@ namespace ItemChecklist.UI
     /// under the in-game HUD root, so it must never be passed to
     /// UserInterfaceModule.RegisterModUI.
     ///
-    /// <para>Visibility follows CK's native HUD idiom (mirrors
-    /// PlayerHealthBarUI): each frame the root's localScale is set to
-    /// <c>Manager.ui.CalcGameplayUITargetScaleMultiplier()</c> — zero whenever
-    /// the gameplay UI is disabled (inventory/menu open, or the checklist
-    /// window open via Iter-9's TemporarilyDisableGameplayUI) — and the root is
-    /// active only while <c>Manager.sceneHandler.isInGame</c>.</para>
+    /// <para>Visibility is explicit (not scale-based): <see cref="hudRoot"/> is
+    /// activated only while <c>Manager.sceneHandler.isInGame</c> AND
+    /// <c>Manager.main.player != null</c> (suppresses the world-load screen) AND
+    /// <c>!Manager.ui.isAnyInventoryShowing</c> (covers inventory, crafting and
+    /// the checklist window) AND <c>!Manager.menu.IsAnyMenuActive()</c>.
+    /// <c>Manager.ui.CalcGameplayUITargetScaleMultiplier()</c> — CK's own HUD
+    /// idiom — returns (0,0,0) for a mod HUD and is deliberately NOT used.
+    /// Render visibility additionally relies on the prefab being on the HUD Unity
+    /// layer (27) at local z=10; see docs/gotchas.md § HUD Counter.</para>
     /// </summary>
     public class ItemChecklistHud : UIelement
     {

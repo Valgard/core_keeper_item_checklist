@@ -891,3 +891,46 @@ methods).
   instead of running under it. Header field heights are 0.7 (contents centred);
   the search field's `selectedMarker` is a full-field controller-focus highlight
   rendered in front of the field background.
+
+
+## HUD Counter (Iter-11.5)
+
+A permanent top-right readout mirroring the window footer's discovered/total
+counter — the mod's first **non-modal** UI.
+
+### Mount (non-modal)
+`ItemChecklistHud : UIelement` lives in `Prefabs/ItemChecklistHUD.prefab`. It is
+NOT a CoreLib mod UI: `ItemChecklistMod.ModObjectLoaded` routes the prefab by
+GameObject name (`"ItemChecklistHUD"`) into a `hudPrefab` field instead of
+`UserInterfaceModule.RegisterModUI`, and `ItemChecklistMod.Update` lazily
+`Instantiate`s it once `Manager.ui.chestInventoryUI` exists, parented under
+`chestInventoryUI.transform.parent` (the `IngameUI` root that also holds CK's
+health/hotbar HUD). One persistent instance, like `PlayerHealthBarUI`.
+
+### Rendering — HUD layer + z (the crux)
+CoreLib has no always-on HUD API. Two facts make a static child of `IngameUI`
+actually render (both proven only in-game — see `docs/gotchas.md`):
+- **Unity layer 27 ("HUD")**, not 5 ("UI"). The uiCamera draws the HUD layer
+  during gameplay (`CameraManager.ShowHUD` toggles `1 << ObjectLayerID.HUD` in its
+  cullingMask); layer 5 is only drawn for modal UIs that CoreLib's open-path
+  activates.
+- **local z = 10** (world z ≈ 0). The `IngameUI` parent sits at world z = -10;
+  CoreLib moves modal UIs to `initialInterfacePosition` (z = 10) when shown. A
+  static element left at the parent origin is outside the uiCamera frustum.
+
+### Visibility — explicit, not the scale-multiplier idiom
+`Manager.ui.CalcGameplayUITargetScaleMultiplier()` returns `(0,0,0)` for this mod
+HUD (it is not a drop-in scale source — using it zeroes the element). `LateUpdate`
+instead toggles `hudRoot` active by explicit signals:
+`isInGame && Manager.main.player != null && !Manager.ui.isAnyInventoryShowing &&
+!Manager.menu.IsAnyMenuActive()`. `isAnyInventoryShowing` (the CoreLib-patched
+aggregate) covers the player inventory, crafting, **and** the checklist window;
+the `player != null` term suppresses the world-load screen.
+
+### Content
+Icon = `ui_slot_toggled_border` box + `ui_icon_requirement` tick (0.7 scale, a
+child `IconFill`), the discovered-row checkbox look. Text = a `PugText` rendering
+`ProgressFormat.Counter(discovered, total)` — the same shared helper the window
+footer (`FormatTitle`) uses, so the two never drift. Re-rendered on
+`DiscoveredState.Changed` and after each bake (world-load + loc-change hooks),
+never per frame (`PugText.Render` rebuilds glyph SpriteRenderers).

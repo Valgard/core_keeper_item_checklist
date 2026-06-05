@@ -602,3 +602,34 @@ and throws `NullReferenceException` (`PlayerController.GetObjectName` →
 
 Verified: cycling languages in the main menu **and** switching EN<->DE
 in-world both re-bake cleanly, 0 NREs.
+
+## HUD Counter (Iter-11.5)
+
+### An always-on element must be on the HUD layer (27) at z≈0 — not layer 5 / parent origin
+A non-modal `UIelement` parented under `chestInventoryUI.transform.parent`
+(`IngameUI`) does **not** render if it copies the modal window's setup (Unity
+layer 5 "UI", parent-origin position). Symptom: GameObject active, full alpha,
+on-screen, but `SpriteRenderer.isVisible == false`. Two independent runtime-only
+reasons (a clean Editor build hides both):
+
+- **Unity layer.** The uiCamera draws the **HUD layer (27)** during gameplay
+  (`CameraManager.ShowHUD` toggles `1 << ObjectLayerID.HUD` in its `cullingMask`);
+  layer 5 ("UI") is only drawn for modal UIs that CoreLib's open-path activates.
+  Put **every** GameObject in the HUD prefab on layer 27.
+- **Z plane.** `IngameUI` sits at world z = -10; CoreLib repositions modal UIs to
+  `initialInterfacePosition` (z = 10 → world z ≈ 0) when opening. A static element
+  left at the parent origin (world z = -10) is outside the uiCamera frustum. Give
+  the content local z = 10.
+
+Bonus: being on the HUD layer means `CameraManager.ShowHUD(false)` culls the
+element together with the rest of the gameplay HUD, for free.
+
+### `CalcGameplayUITargetScaleMultiplier()` returns (0,0,0) for a mod HUD
+CK's own HUD elements set
+`localScale = Manager.ui.CalcGameplayUITargetScaleMultiplier()` each frame, but for
+a mod HUD mounted as above it returns `(0,0,0)` — used as a scale source it makes
+the element invisible. Drive visibility explicitly instead (toggle the root active
+on `isInGame && Manager.main.player != null && !Manager.ui.isAnyInventoryShowing &&
+!Manager.menu.IsAnyMenuActive()`). The `player != null` term also keeps the HUD off
+the **world-load screen** (`isInGame` is already true there — the same gap as the
+Iter-15 F1 guard).
