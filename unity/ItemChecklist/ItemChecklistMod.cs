@@ -179,16 +179,21 @@ namespace ItemChecklist
                     Debug.Log("[ItemChecklist] Hotkey — closing UI");
                     Manager.ui.HideAllInventoryAndCraftingUI(forceClose: false);
                 }
-                // Guard: a Vanilla menu (pause/title), the inventory/crafting
-                // UI, a focused text field, or chat is active — don't open over
-                // it. isPlayerInventoryShowing closes the gap: IsAnyMenuActive()
-                // covers only the menu system, never the inventory/crafting UI.
-                else if (Manager.menu.IsAnyMenuActive()
+                // Guard: not actually playing in a world (world-load screen or
+                // exit-to-menu fade — the Iter-15 loading-screen bug class, shared
+                // with the HUD via WorldState), a Vanilla menu (pause/title), the
+                // inventory/crafting UI, a focused text field, or chat is active —
+                // don't open over it. isPlayerInventoryShowing closes the gap:
+                // IsAnyMenuActive() covers only the menu system, never the
+                // inventory/crafting UI. (Cutscenes/intro need a separate
+                // input-locked signal and remain out of scope — roadmap Iter-15.)
+                else if (!WorldState.IsInPlayableWorld
+                    || Manager.menu.IsAnyMenuActive()
                     || Manager.ui.isPlayerInventoryShowing
                     || Manager.input.textInputIsActive
                     || ReferenceEquals(Manager.input.activeInputField, Manager.ui.chatWindow))
                 {
-                    Debug.Log("[ItemChecklist] Hotkey ignored (other menu/input active)");
+                    Debug.Log("[ItemChecklist] Hotkey ignored (loading screen / other menu/input active)");
                 }
                 else
                 {

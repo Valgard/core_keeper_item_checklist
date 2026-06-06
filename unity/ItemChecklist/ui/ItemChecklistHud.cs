@@ -10,8 +10,10 @@ namespace ItemChecklist.UI
     /// UserInterfaceModule.RegisterModUI.
     ///
     /// <para>Visibility is explicit (not scale-based): <see cref="hudRoot"/> is
-    /// activated only while <c>Manager.sceneHandler.isInGame</c> AND
-    /// <c>Manager.main.player != null</c> (suppresses the world-load screen) AND
+    /// activated only while <see cref="WorldState.IsInPlayableWorld"/> (in-game,
+    /// scene-handler ready, no scene load queued — this is what actually
+    /// suppresses both the entry and the exit-to-menu load screen; see that
+    /// helper for why <c>Manager.main.player != null</c> alone does NOT) AND
     /// <c>!Manager.ui.isAnyInventoryShowing</c> (covers inventory, crafting and
     /// the checklist window) AND <c>!Manager.menu.IsAnyMenuActive()</c>.
     /// <c>Manager.ui.CalcGameplayUITargetScaleMultiplier()</c> — CK's own HUD
@@ -46,12 +48,12 @@ namespace ItemChecklist.UI
             {
                 // Good-HUD-citizen visibility via explicit, proven signals (the
                 // CalcGameplayUITargetScaleMultiplier idiom returns (0,0,0) here —
-                // it is not a drop-in scale source for a mod HUD). Hidden when the
+                // it is not a drop-in scale source for a mod HUD). Hidden during
+                // either load screen (WorldState.IsInPlayableWorld) and when the
                 // player inventory / crafting / the checklist window (a CoreLib mod
                 // UI, covered by the aggregate isAnyInventoryShowing) or any menu is
-                // open; shown only while actually in a world.
-                bool show = Manager.sceneHandler != null && Manager.sceneHandler.isInGame
-                            && Manager.main != null && Manager.main.player != null   // not during the world load screen (isInGame is already true there)
+                // open; shown only while actually playing in a world.
+                bool show = WorldState.IsInPlayableWorld
                             && !Manager.ui.isAnyInventoryShowing
                             && !Manager.menu.IsAnyMenuActive();
                 if (hudRoot.activeSelf != show) hudRoot.SetActive(show);
