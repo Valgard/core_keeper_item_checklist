@@ -58,6 +58,12 @@ derived from [Item Browser](https://github.com/moorowl/ItemBrowser) by **moorowl
 used under the MIT License (© 2026 moorowl). These are placeholders pending the
 mod's own pixel-art (see [Known Limitations](#known-limitations)).
 
+## License
+
+Personal-use, non-commercial — Pugstorm Core Keeper EULA. Built against the
+official `CoreKeeperModSDK`. Source on GitHub; contributions and translations
+welcome.
+
 ---
 
 ## Development
