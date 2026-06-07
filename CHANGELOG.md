@@ -48,16 +48,3 @@ cleanup.
   More languages can be added later as data.
 - **Functional scrollbar.** A draggable, proportionally-sized scrollbar using
   Core Keeper's native widget, with mouse-wheel support.
-
-### Known limitations
-
-- **Placeholder art.** The rarity border and the scrollbar track/handle use
-  placeholder sprites derived from [Item Browser](https://github.com/moorowl/ItemBrowser) (MIT). Real pixel-art is
-  planned for a later version. See the README "Credits" section.
-- **No per-variation tracking.** Each item family is tracked once; colour / skin
-  / state variants do not get their own row.
-- **Cooked-food Rare/Epic tiers are included but not yet verified against live
-  cooking events.** Each cooking pair is assumed to yield up to three distinct
-  discovery tokens (Base/Rare/Epic). If that assumption is too generous,
-  unreachable tier entries simply stay greyed out — functionally correct,
-  cosmetically suboptimal.
